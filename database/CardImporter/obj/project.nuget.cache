@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "dgSpecHash": "lZhRbS4a/gNGc3crUt0nJwVAzZeb3SpKHTUXR3dYjeWOKTs8+H9TS13qTHlPD1kZPLWnXIZPlO5G4U7QEWu39A==",
+  "success": true,
+  "projectFilePath": "/home/skordi/OPmarket/database/CardImporter/CardImporter.csproj",
+  "expectedPackageFiles": [
+    "/home/skordi/.nuget/packages/csvhelper/33.1.0/csvhelper.33.1.0.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.configuration/9.0.7/microsoft.extensions.configuration.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.configuration.abstractions/9.0.7/microsoft.extensions.configuration.abstractions.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.configuration.fileextensions/9.0.7/microsoft.extensions.configuration.fileextensions.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.configuration.json/9.0.7/microsoft.extensions.configuration.json.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.2/microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.fileproviders.abstractions/9.0.7/microsoft.extensions.fileproviders.abstractions.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.fileproviders.physical/9.0.7/microsoft.extensions.fileproviders.physical.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.filesystemglobbing/9.0.7/microsoft.extensions.filesystemglobbing.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.2/microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
+    "/home/skordi/.nuget/packages/microsoft.extensions.primitives/9.0.7/microsoft.extensions.primitives.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/npgsql/9.0.3/npgsql.9.0.3.nupkg.sha512",
+    "/home/skordi/.nuget/packages/system.io.pipelines/9.0.7/system.io.pipelines.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/system.text.encodings.web/9.0.7/system.text.encodings.web.9.0.7.nupkg.sha512",
+    "/home/skordi/.nuget/packages/system.text.json/9.0.7/system.text.json.9.0.7.nupkg.sha512"
+  ],
+  "logs": []
+}
