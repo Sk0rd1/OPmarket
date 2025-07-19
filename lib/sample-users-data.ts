@@ -235,3 +235,19 @@ export const sampleUsers: SampleUser[] = [
 export function getSampleUserByUsername(username: string): SampleUser | null {
   return sampleUsers.find((user) => user.username.toLowerCase() === username.toLowerCase()) || null
 }
+
+export function searchSampleUsers(query: string): SampleUser[] {
+  if (!query || query.length < 2) {
+    return []
+  }
+
+  const searchTerm = query.toLowerCase()
+
+  return sampleUsers.filter((user) => {
+    return (
+      user.username.toLowerCase().includes(searchTerm) ||
+      user.aboutMe.toLowerCase().includes(searchTerm) ||
+      user.specialties.some((specialty) => specialty.toLowerCase().includes(searchTerm))
+    )
+  })
+}
