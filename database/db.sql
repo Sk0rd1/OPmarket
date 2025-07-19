@@ -1,58 +1,104 @@
--- Оновлення схеми One Piece TCG Marketplace Database
--- Додавання нових умов карт, багатозначних кольорів та типу DON
+-- One Piece TCG Marketplace Database Schema
+-- Оновлена версія з актуальною структурою
 
--- 1. Додавання нових умов карт
-INSERT INTO card_conditions (code, name, description, price_modifier, sort_order) VALUES
-('MT', 'Mint', 'Ідеальний стан - абсолютно нова карта', 1.100, 0),
-('EX', 'Excellent', 'Мінімальне використання - майже ідеальний стан', 0.950, 1.5),
-('VG', 'Very Good', 'Дещо помітні пошкодження - незначні сліди використання', 0.750, 2.5),
-('G', 'Good', 'Помітні пошкодження - видимі але не критичні пошкодження', 0.600, 3.5);
+-- Увімкнути розширення для UUID
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Оновлення sort_order для існуючих умов
-UPDATE card_conditions SET sort_order = 1 WHERE code = 'NM';
-UPDATE card_conditions SET sort_order = 2 WHERE code = 'LP';
-UPDATE card_conditions SET sort_order = 3 WHERE code = 'MP';
-UPDATE card_conditions SET sort_order = 4 WHERE code = 'HP';
-UPDATE card_conditions SET sort_order = 5 WHERE code = 'DMG';
+-- 1. Таблиця типів карт
+CREATE TABLE IF NOT EXISTS card_types (
+    code VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- 2. Видалення Multicolor з card_colors
-DELETE FROM card_colors WHERE code = 'Multicolor';
+-- 2. Таблиця кольорів карт
+CREATE TABLE IF NOT EXISTS card_colors (
+    code VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    hex_color VARCHAR(7),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
--- 3. Створення junction таблиці для many-to-many зв'язку між картами та кольорами
-CREATE TABLE card_colors_junction (
+-- 3. Таблиця умов карт (спрощена версія)
+CREATE TABLE IF NOT EXISTS card_conditions (
+    code VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description TEXT,
+    sort_order INTEGER DEFAULT 0
+);
+
+-- 4. Таблиця карт (основна, без color_code)
+CREATE TABLE IF NOT EXISTS cards (
+    id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    card_type_detail VARCHAR(100),
+    effect TEXT,
+    power INTEGER,
+    cost INTEGER,
+    life INTEGER,
+    counter INTEGER,
+    attribute VARCHAR(50),
+    rarity VARCHAR(10),
+    set_code VARCHAR(20),
+    collector_number VARCHAR(10),
+    artist VARCHAR(100),
+    image_url VARCHAR(500),
+    search_vector tsvector,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Junction таблиця для багатозначних кольорів карт
+CREATE TABLE IF NOT EXISTS card_colors_junction (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     card_id VARCHAR(20) NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     color_code VARCHAR(20) NOT NULL REFERENCES card_colors(code) ON DELETE CASCADE,
-    is_primary BOOLEAN DEFAULT FALSE, -- Основний колір карти
+    is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(card_id, color_code)
 );
 
--- Індекси для junction таблиці
-CREATE INDEX idx_card_colors_junction_card ON card_colors_junction(card_id);
-CREATE INDEX idx_card_colors_junction_color ON card_colors_junction(color_code);
-CREATE INDEX idx_card_colors_junction_primary ON card_colors_junction(is_primary);
+-- Індекси для оптимізації
+CREATE INDEX IF NOT EXISTS idx_cards_name ON cards(name);
+CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(card_type_detail);
+CREATE INDEX IF NOT EXISTS idx_cards_rarity ON cards(rarity);
+CREATE INDEX IF NOT EXISTS idx_cards_set ON cards(set_code);
+CREATE INDEX IF NOT EXISTS idx_cards_search ON cards USING gin(search_vector);
 
--- 4. Додавання типу DON до card_types
+CREATE INDEX IF NOT EXISTS idx_card_colors_junction_card ON card_colors_junction(card_id);
+CREATE INDEX IF NOT EXISTS idx_card_colors_junction_color ON card_colors_junction(color_code);
+CREATE INDEX IF NOT EXISTS idx_card_colors_junction_primary ON card_colors_junction(is_primary);
+
+-- Початкові дані для кольорів карт
+INSERT INTO card_colors (code, name, hex_color) VALUES
+('Red', 'Red', '#FF0000'),
+('Green', 'Green', '#00FF00'),
+('Blue', 'Blue', '#0000FF'),
+('Purple', 'Purple', '#800080'),
+('Yellow', 'Yellow', '#FFFF00'),
+('Black', 'Black', '#000000')
+ON CONFLICT (code) DO NOTHING;
+
+-- Початкові дані для умов карт (4 основні умови)
+INSERT INTO card_conditions (code, name, description, sort_order) VALUES
+('M', 'Mint', 'Ідеальний стан - абсолютно нова карта', 1),
+('NM', 'Near Mint', 'Майже ідеальний стан - мінімальні сліди використання', 2),
+('MP', 'Moderately Played', 'Помірне використання - помітні але не критичні пошкодження', 3),
+('HP', 'Heavily Played', 'Сильне використання - значні пошкодження', 4)
+ON CONFLICT (code) DO NOTHING;
+
+-- Початкові дані для типів карт
 INSERT INTO card_types (code, name, description) VALUES
-('DON', 'DON!!', 'DON!! cards - special resource cards');
+('LEADER', 'Leader', 'Leader cards'),
+('CHARACTER', 'Character', 'Character cards'),
+('EVENT', 'Event', 'Event cards'),
+('STAGE', 'Stage', 'Stage cards'),
+('DON', 'DON!!', 'DON!! cards - special resource cards')
+ON CONFLICT (code) DO NOTHING;
 
--- 5. Міграція існуючих даних з cards.color_code до junction таблиці
--- (Виконати після того, як у cards таблиці є дані)
-INSERT INTO card_colors_junction (card_id, color_code, is_primary)
-SELECT id, color_code, TRUE
-FROM cards 
-WHERE color_code IS NOT NULL;
-
--- 6. Видалення color_code колонки з cards таблиці
--- Спочатку видаляємо індекс
-DROP INDEX IF EXISTS idx_cards_color;
-
--- Видаляємо foreign key constraint та колонку
-ALTER TABLE cards DROP CONSTRAINT IF EXISTS cards_color_code_fkey;
-ALTER TABLE cards DROP COLUMN IF EXISTS color_code;
-
--- 7. Створення функції для отримання кольорів карти
+-- Функція для отримання кольорів карти
 CREATE OR REPLACE FUNCTION get_card_colors(card_id_param VARCHAR(20))
 RETURNS TEXT[] AS $$
 DECLARE
@@ -68,7 +114,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 8. Створення функції для отримання основного кольору карти
+-- Функція для отримання основного кольору карти
 CREATE OR REPLACE FUNCTION get_primary_card_color(card_id_param VARCHAR(20))
 RETURNS VARCHAR(50) AS $$
 DECLARE
@@ -85,7 +131,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 9. Оновлення пошукового вектора для включення інформації про кольори
+-- Функція для оновлення пошукового вектора
 CREATE OR REPLACE FUNCTION update_cards_search_vector()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -106,9 +152,14 @@ BEGIN
     );
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- 10. Створення тригера для оновлення пошукового вектора при зміні кольорів
+-- Тригер для автоматичного оновлення пошукового вектора при зміні карти
+CREATE OR REPLACE TRIGGER update_cards_search_vector_trigger
+    BEFORE INSERT OR UPDATE ON cards
+    FOR EACH ROW EXECUTE FUNCTION update_cards_search_vector();
+
+-- Функція для оновлення пошукового вектора при зміні кольорів
 CREATE OR REPLACE FUNCTION update_card_search_on_color_change()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -128,13 +179,14 @@ BEGIN
     
     RETURN COALESCE(NEW, OLD);
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_card_search_on_color_change_trigger
+-- Тригер для оновлення пошукового вектора при зміні кольорів
+CREATE OR REPLACE TRIGGER update_card_search_on_color_change_trigger
     AFTER INSERT OR UPDATE OR DELETE ON card_colors_junction
     FOR EACH ROW EXECUTE FUNCTION update_card_search_on_color_change();
 
--- 11. Створення view для зручного отримання інформації про карти з кольорами
+-- View для зручного отримання інформації про карти з кольорами
 CREATE OR REPLACE VIEW cards_with_colors AS
 SELECT 
     c.*,
@@ -150,27 +202,28 @@ LEFT JOIN card_colors_junction ccj ON c.id = ccj.card_id
 LEFT JOIN card_colors cc ON ccj.color_code = cc.code
 GROUP BY c.id;
 
--- 12. Приклади запитів для роботи з новою структурою
-
--- Додавання кольорів до карти
--- INSERT INTO card_colors_junction (card_id, color_code, is_primary) VALUES 
--- ('CARD_ID', 'Red', TRUE),
--- ('CARD_ID', 'Green', FALSE);
-
--- Пошук карт за кольором
--- SELECT DISTINCT c.* FROM cards c
--- JOIN card_colors_junction ccj ON c.id = ccj.card_id
--- WHERE ccj.color_code = 'Red';
-
--- Пошук багатокольорових карт
--- SELECT c.*, COUNT(ccj.color_code) as color_count
--- FROM cards c
--- JOIN card_colors_junction ccj ON c.id = ccj.card_id
--- GROUP BY c.id
--- HAVING COUNT(ccj.color_code) > 1;
-
+-- Коментарі до таблиць та функцій
 COMMENT ON TABLE card_colors_junction IS 'Junction table for many-to-many relationship between cards and colors';
 COMMENT ON COLUMN card_colors_junction.is_primary IS 'Indicates if this is the primary color of the card';
 COMMENT ON FUNCTION get_card_colors(VARCHAR) IS 'Returns array of color names for a given card';
 COMMENT ON FUNCTION get_primary_card_color(VARCHAR) IS 'Returns primary color name for a given card';
 COMMENT ON VIEW cards_with_colors IS 'View that includes card information with aggregated color data';
+
+-- Приклади використання:
+
+-- Додавання кольорів до карти:
+-- INSERT INTO card_colors_junction (card_id, color_code, is_primary) VALUES 
+-- ('CARD_ID', 'Red', TRUE),
+-- ('CARD_ID', 'Green', FALSE);
+
+-- Пошук карт за кольором:
+-- SELECT DISTINCT c.* FROM cards c
+-- JOIN card_colors_junction ccj ON c.id = ccj.card_id
+-- WHERE ccj.color_code = 'Red';
+
+-- Пошук багатокольорових карт:
+-- SELECT c.*, COUNT(ccj.color_code) as color_count
+-- FROM cards c
+-- JOIN card_colors_junction ccj ON c.id = ccj.card_id
+-- GROUP BY c.id
+-- HAVING COUNT(ccj.color_code) > 1;
