@@ -1,280 +1,260 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import Image from "next/image"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Star, TrendingUp, Clock, Shuffle } from "lucide-react"
-import { sampleUsers } from "@/lib/sample-users-data"
+import { Badge } from "@/components/ui/badge"
+import { Search, Star, UserIcon, Shuffle, TrendingUp, Clock, Award } from "lucide-react"
+import { sampleUsers, searchSampleUsers, type SampleUser } from "@/lib/sample-users-data"
 
 export default function ProfileDiscovery() {
-  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("rating")
+  const [searchResults, setSearchResults] = useState<SampleUser[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [sortBy, setSortBy] = useState("highest-rated")
+  const [featuredUsers, setFeaturedUsers] = useState<SampleUser[]>([])
 
-  const filteredUsers = useMemo(() => {
-    const filtered = sampleUsers.filter(
-      (user) =>
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.aboutMe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.specialties.some((specialty) => specialty.toLowerCase().includes(searchQuery.toLowerCase())),
-    )
-
-    // Sort users
+  useEffect(() => {
+    // Sort and set featured users based on sort option
+    const sorted = [...sampleUsers]
     switch (sortBy) {
-      case "rating":
-        filtered.sort((a, b) => b.rating.average - a.rating.average)
+      case "highest-rated":
+        sorted.sort((a, b) => b.rating.average - a.rating.average)
         break
-      case "sales":
-        filtered.sort((a, b) => b.totalSales - a.totalSales)
+      case "most-sales":
+        sorted.sort((a, b) => b.totalSales - a.totalSales)
         break
-      case "recent":
-        filtered.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime())
-        break
-      default:
+      case "recently-active":
+        sorted.sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
         break
     }
+    setFeaturedUsers(sorted)
+  }, [sortBy])
 
-    return filtered
-  }, [searchQuery, sortBy])
-
-  const featuredUsers = useMemo(() => {
-    return sampleUsers.sort((a, b) => b.rating.average - a.rating.average).slice(0, 10)
-  }, [])
-
-  const handleUserClick = (username: string) => {
-    router.push(`/profile/${username.toLowerCase()}`)
-  }
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      const results = searchSampleUsers(searchQuery)
+      setSearchResults(results)
+      setShowSearchResults(true)
+    } else {
+      setShowSearchResults(false)
+      setSearchResults([])
+    }
+  }, [searchQuery])
 
   const handleRandomProfile = () => {
     const randomUser = sampleUsers[Math.floor(Math.random() * sampleUsers.length)]
-    router.push(`/profile/${randomUser.username.toLowerCase()}`)
+    window.location.href = `/profile/${randomUser.username}`
   }
 
-  const handleSearch = (value: string) => {
-    setSearchQuery(value)
-    setShowSearchResults(value.length > 0)
-  }
+  const StarDisplay = ({ rating, size = "w-4 h-4" }: { rating: number; size?: string }) => (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`${size} ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+        />
+      ))}
+    </div>
+  )
+
+  const recentActivity = [
+    { user: "PirateKing_Luffy", action: "listed a new SR Monkey D. Luffy card", time: "2 hours ago" },
+    { user: "ZoroSwordsman", action: "completed a trade for Roronoa Zoro", time: "4 hours ago" },
+    { user: "CardCollectorAce", action: "received a 5-star review", time: "6 hours ago" },
+    { user: "NavigatorNami", action: "updated their profile", time: "8 hours ago" },
+    { user: "CookSanji", action: "listed 3 new cards", time: "12 hours ago" },
+  ]
 
   return (
-    <div className="space-y-6">
-      {/* Search Header */}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Discover Traders</h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Find trusted sellers, explore collections, and connect with the One Piece TCG community
+        </p>
+      </div>
+
+      {/* Search Section */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Discover Traders</CardTitle>
-          <p className="text-gray-600">Find and connect with One Piece TCG traders from around the world</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <CardContent className="p-6">
+          <div className="relative">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-                placeholder="Search user profiles, specialties, or trading preferences..."
+                type="text"
+                placeholder="Search user profiles..."
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 text-lg h-12"
               />
             </div>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="sales">Most Sales</SelectItem>
-                <SelectItem value="recent">Recently Active</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleRandomProfile}>
-              <Shuffle className="w-4 h-4 mr-2" />
+
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1 max-h-80 overflow-y-auto">
+                {searchResults.map((user) => (
+                  <Link
+                    key={user.id}
+                    href={`/profile/${user.username}`}
+                    className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0"
+                  >
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <Image
+                        src={user.avatar || "/placeholder.svg"}
+                        alt={user.username}
+                        width={40}
+                        height={40}
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{user.username}</div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <StarDisplay rating={Math.round(user.rating.average)} />
+                        <span>{user.rating.average.toFixed(1)}</span>
+                        <span>•</span>
+                        <span>{user.totalSales}+ sales</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {showSearchResults && searchResults.length === 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1 p-4 text-center text-gray-500">
+                No users found matching "{searchQuery}"
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <Button onClick={handleRandomProfile} variant="outline" className="flex items-center gap-2 bg-transparent">
+              <Shuffle className="w-4 h-4" />
               Random Profile
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Search Results */}
-      {showSearchResults && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Results ({filteredUsers.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredUsers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredUsers.map((user) => (
-                  <Card key={user.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <img
-                          src={user.avatar || "/placeholder.svg"}
-                          alt={user.username}
-                          className="w-12 h-12 rounded-full"
-                        />
-                        <div>
-                          <h3 className="font-semibold">{user.username}</h3>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm">{user.rating.average}</span>
-                            <span className="text-sm text-gray-500">({user.rating.total})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{user.aboutMe}</p>
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {user.specialties.slice(0, 2).map((specialty) => (
-                          <Badge key={specialty} variant="secondary" className="text-xs">
-                            {specialty}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">{user.totalSales}+ sales</span>
-                        <Button size="sm" onClick={() => handleUserClick(user.username)}>
-                          View Profile
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No users found matching your search.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Featured Sellers Section */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Award className="w-6 h-6 text-yellow-500" />
+            Featured Sellers
+          </h2>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="highest-rated">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Highest Rated
+                </div>
+              </SelectItem>
+              <SelectItem value="most-sales">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Most Sales
+                </div>
+              </SelectItem>
+              <SelectItem value="recently-active">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Recently Active
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Featured Sellers */}
-      {!showSearchResults && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Featured Sellers
-                </CardTitle>
-                <p className="text-gray-600">Top-rated traders in the community</p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Clock className="w-4 h-4" />
-                Updated hourly
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {featuredUsers.map((user) => (
-                <Card key={user.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={user.avatar || "/placeholder.svg"}
-                        alt={user.username}
-                        className="w-12 h-12 rounded-full"
-                      />
-                      <div>
-                        <h3 className="font-semibold">{user.username}</h3>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm">{user.rating.average}</span>
-                          <span className="text-sm text-gray-500">({user.rating.total})</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{user.aboutMe}</p>
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {user.specialties.slice(0, 2).map((specialty) => (
-                        <Badge key={specialty} variant="secondary" className="text-xs">
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{user.totalSales}+ sales</span>
-                      <Button size="sm" onClick={() => handleUserClick(user.username)}>
-                        View Profile
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {featuredUsers.map((user) => (
+            <Card key={user.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  {/* Avatar */}
+                  <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden mx-auto">
+                    <Image
+                      src={user.avatar || "/placeholder.svg"}
+                      alt={user.username}
+                      width={80}
+                      height={80}
+                      className="object-cover"
+                    />
+                  </div>
 
-      {/* Recent Activity Feed */}
-      {!showSearchResults && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Community Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/placeholder.svg?height=32&width=32&text=Z"
-                    alt="ZoroSwordsman"
-                    className="w-8 h-8 rounded-full"
-                  />
+                  {/* User Info */}
                   <div>
-                    <p className="text-sm">
-                      <strong>ZoroSwordsman</strong> just listed a new SR Mihawk card
+                    <h3 className="font-bold text-lg text-gray-900 mb-1">{user.username}</h3>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <StarDisplay rating={Math.round(user.rating.average)} />
+                      <span className="text-sm font-medium">{user.rating.average.toFixed(1)}</span>
+                      <span className="text-sm text-gray-500">({user.rating.total})</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      <span className="font-semibold text-blue-900">{user.totalSales}+</span> total sales
                     </p>
-                    <p className="text-xs text-gray-500">2 minutes ago</p>
                   </div>
-                </div>
-                <Badge variant="outline">New Listing</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/placeholder.svg?height=32&width=32&text=L"
-                    alt="PirateKing_Luffy"
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <div>
-                    <p className="text-sm">
-                      <strong>PirateKing_Luffy</strong> completed a trade worth $85
-                    </p>
-                    <p className="text-xs text-gray-500">15 minutes ago</p>
+
+                  {/* Specialties */}
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {user.specialties.slice(0, 2).map((specialty) => (
+                      <Badge key={specialty} variant="secondary" className="text-xs">
+                        {specialty}
+                      </Badge>
+                    ))}
                   </div>
+
+                  {/* View Profile Button */}
+                  <Link href={`/profile/${user.username}`}>
+                    <Button className="w-full">View Profile</Button>
+                  </Link>
                 </div>
-                <Badge variant="outline" className="text-green-600">
-                  Sale
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/placeholder.svg?height=32&width=32&text=A"
-                    alt="CardCollectorAce"
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <div>
-                    <p className="text-sm">
-                      <strong>CardCollectorAce</strong> received a 5-star review
-                    </p>
-                    <p className="text-xs text-gray-500">1 hour ago</p>
-                  </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Activity Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-600" />
+            Recent Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-gray-600" />
                 </div>
-                <Badge variant="outline" className="text-yellow-600">
-                  ⭐ Review
-                </Badge>
+                <div className="flex-1">
+                  <p className="text-sm">
+                    <Link href={`/profile/${activity.user}`} className="font-medium text-blue-900 hover:underline">
+                      {activity.user}
+                    </Link>{" "}
+                    {activity.action}
+                  </p>
+                  <p className="text-xs text-gray-500">{activity.time}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

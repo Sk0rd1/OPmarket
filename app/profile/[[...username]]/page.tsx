@@ -3,28 +3,33 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Header from "@/components/header"
+import ProfileDiscovery from "@/components/profile/profile-discovery"
 import ProfileView from "@/components/profile/profile-view"
 import ProtectedRoute from "@/components/auth/protected-route"
 import { useAuth } from "@/lib/auth-context"
 import { getSampleUserByUsername } from "@/lib/sample-users-data"
 
-export default function UserProfilePage() {
+export default function ProfilePage() {
   const params = useParams()
   const { user: currentUser } = useAuth()
   const [profileUser, setProfileUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const username = params.username as string
+  // Extract username from params - params.username is string[] for catch-all routes
+  const username = Array.isArray(params.username) ? params.username[0] : params.username
 
-    if (username) {
-      // Get sample user profile
-      const user = getSampleUserByUsername(username)
-      setProfileUser(user)
+  useEffect(() => {
+    if (!username) {
+      // No username in URL - show profile discovery page
+      setLoading(false)
+      return
     }
 
+    // Username provided - show specific user profile
+    const user = getSampleUserByUsername(username)
+    setProfileUser(user)
     setLoading(false)
-  }, [params.username])
+  }, [username])
 
   if (!currentUser) {
     return (
@@ -50,6 +55,19 @@ export default function UserProfilePage() {
     )
   }
 
+  // No username - show profile discovery page
+  if (!username) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header />
+        <div className="container mx-auto px-4 py-6">
+          <ProfileDiscovery />
+        </div>
+      </div>
+    )
+  }
+
+  // Username provided but user not found
   if (!profileUser) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -64,11 +82,14 @@ export default function UserProfilePage() {
     )
   }
 
+  // Show specific user profile
+  const isOwnProfile = currentUser?.username.toLowerCase() === username.toLowerCase()
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
       <div className="container mx-auto px-4 py-6">
-        <ProfileView user={profileUser} isOwnProfile={false} />
+        <ProfileView user={profileUser} isOwnProfile={isOwnProfile} />
       </div>
     </div>
   )

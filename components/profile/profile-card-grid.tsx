@@ -3,89 +3,117 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, MessageCircle } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
-
-interface CardListing {
-  id: string
-  name: string
-  image: string
-  price: number
-  condition: string
-  rarity: string
-  listings: Array<{
-    id: string
-    price: number
-    condition: string
-    seller: string
-    location: string
-  }>
-}
 
 interface ProfileCardGridProps {
-  userListings: CardListing[]
+  userId: string
 }
 
-export default function ProfileCardGrid({ userListings }: ProfileCardGridProps) {
-  if (userListings.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No cards currently for sale</p>
-      </div>
-    )
+// Mock card data - in real app this would come from API
+const mockCards = [
+  {
+    id: "1",
+    name: "Monkey D. Luffy",
+    rarity: "SR",
+    price: 45.99,
+    condition: "Near Mint",
+    image: "/placeholder.svg?height=200&width=150&text=Luffy",
+  },
+  {
+    id: "2",
+    name: "Roronoa Zoro",
+    rarity: "R",
+    price: 28.5,
+    condition: "Mint",
+    image: "/placeholder.svg?height=200&width=150&text=Zoro",
+  },
+  {
+    id: "3",
+    name: "Nami",
+    rarity: "UC",
+    price: 12.99,
+    condition: "Near Mint",
+    image: "/placeholder.svg?height=200&width=150&text=Nami",
+  },
+  {
+    id: "4",
+    name: "Portgas D. Ace",
+    rarity: "SR",
+    price: 52.0,
+    condition: "Mint",
+    image: "/placeholder.svg?height=200&width=150&text=Ace",
+  },
+]
+
+export default function ProfileCardGrid({ userId }: ProfileCardGridProps) {
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case "SR":
+        return "bg-yellow-500"
+      case "R":
+        return "bg-purple-500"
+      case "UC":
+        return "bg-blue-500"
+      case "C":
+        return "bg-gray-500"
+      default:
+        return "bg-gray-500"
+    }
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {userListings.map((card) => {
-        // Get the first listing for this card
-        const listing = card.listings[0]
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Cards for Sale ({mockCards.length})</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            Sort by Price
+          </Button>
+          <Button variant="outline" size="sm">
+            Filter by Rarity
+          </Button>
+        </div>
+      </div>
 
-        return (
-          <Card key={card.id} className="hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {mockCards.map((card) => (
+          <Card key={card.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Card Image */}
-                <div className="aspect-[3/4] relative bg-gray-100 rounded-lg overflow-hidden">
-                  <Image src={card.image || "/placeholder.svg"} alt={card.name} fill className="object-cover" />
-                </div>
+              <div className="relative mb-3">
+                <Image
+                  src={card.image || "/placeholder.svg"}
+                  alt={card.name}
+                  width={150}
+                  height={200}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <Badge className={`absolute top-2 right-2 text-white ${getRarityColor(card.rarity)}`}>
+                  {card.rarity}
+                </Badge>
+              </div>
 
-                {/* Card Info */}
-                <div>
-                  <h3 className="font-semibold text-sm line-clamp-2">{card.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-xs">
-                      {card.rarity}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {listing.condition}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Price and Actions */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm">{card.name}</h4>
                 <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold text-blue-900">${listing.price.toFixed(2)}</div>
-                  <div className="flex gap-2">
-                    <Link href={`/card/${card.id}`}>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Button size="sm">
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <span className="text-lg font-bold text-green-600">${card.price}</span>
+                  <Badge variant="outline" className="text-xs">
+                    {card.condition}
+                  </Badge>
                 </div>
-
-                {/* Location */}
-                <p className="text-xs text-gray-500">{listing.location}</p>
+                <Button className="w-full" size="sm">
+                  View Details
+                </Button>
               </div>
             </CardContent>
           </Card>
-        )
-      })}
+        ))}
+      </div>
+
+      {mockCards.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No cards listed for sale yet.</p>
+        </div>
+      )}
     </div>
   )
 }
