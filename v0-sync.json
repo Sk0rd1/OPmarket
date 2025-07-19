@@ -1,4 +1,0 @@
-{
-  "syncPath": "./frontend",
-  "excludePaths": ["backend", "database", "scripts"]
-}

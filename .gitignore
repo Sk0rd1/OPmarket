@@ -1,30 +1,27 @@
-# Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/dist/
-frontend/.env.local
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Backend
-backend/*/bin/
-backend/*/obj/
-backend/*/*.user
-backend/*/appsettings.Development.json
+# dependencies
+/node_modules
 
-# Database
-database/backups/
-database/temp/
+# next.js
+/.next/
+/out/
 
-# Scripts
-scripts/temp/
-scripts/logs/
-scripts/__pycache__/
+# production
+/build
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

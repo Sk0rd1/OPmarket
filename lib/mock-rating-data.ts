@@ -1,0 +1,58 @@
+import type { Rating, RatingSummary } from "./types"
+
+export const mockUserRatings: { summary: RatingSummary; recentRatings: Rating[] } = {
+  summary: {
+    averageRating: 4.8,
+    totalRatings: 47,
+    totalTransactions: 52,
+    breakdown: {
+      communication: 4.9,
+      speed: 4.7,
+      reliability: 4.8,
+    },
+  },
+  recentRatings: [
+    {
+      id: "rating-1",
+      chatId: "chat-1",
+      ratedUserId: "user-1",
+      raterUserId: "user-2",
+      raterName: "OnePieceFan",
+      cardName: "Tony Tony.Chopper",
+      overallRating: 5,
+      communication: 5,
+      speed: 5,
+      reliability: 5,
+      comment: "Excellent seller! Fast shipping and card was exactly as described. Highly recommend!",
+      createdAt: new Date(Date.now() - 86400000),
+    },
+    {
+      id: "rating-2",
+      chatId: "chat-2",
+      ratedUserId: "user-1",
+      raterUserId: "user-3",
+      raterName: "TCGCollector",
+      cardName: "Roronoa Zoro",
+      overallRating: 4,
+      communication: 4,
+      speed: 4,
+      reliability: 4,
+      comment: "Good transaction overall. Card arrived safely and in good condition.",
+      createdAt: new Date(Date.now() - 172800000),
+    },
+    {
+      id: "rating-3",
+      chatId: "chat-3",
+      ratedUserId: "user-1",
+      raterUserId: "user-4",
+      raterName: "PirateKing",
+      cardName: "Nami",
+      overallRating: 5,
+      communication: 5,
+      speed: 4,
+      reliability: 5,
+      comment: "Great seller! Very responsive and helpful throughout the process.",
+      createdAt: new Date(Date.now() - 259200000),
+    },
+  ],
+}
