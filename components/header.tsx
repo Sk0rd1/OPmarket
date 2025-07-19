@@ -1,17 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useState } from "react"
+import { Menu, X, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Home, DollarSign, User, Newspaper, Menu, X, MessageCircle, LogOut, Search } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import LoginModal from "@/components/auth/login-modal"
 import RegisterModal from "@/components/auth/register-modal"
@@ -20,34 +13,10 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showRegisterModal, setShowRegisterModal] = useState(false)
-  const pathname = usePathname()
   const { user, logout } = useAuth()
-
-  const navItems = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/sell", label: "Sell Cards", icon: DollarSign, protected: true },
-    { href: "/profile", label: "Profiles", icon: Search, protected: true },
-    { href: "/chats", label: "Chats", icon: MessageCircle, protected: true },
-    { href: "/news", label: "News", icon: Newspaper },
-  ]
-
-  const handleProtectedNavigation = (href: string, isProtected: boolean) => {
-    if (isProtected && !user) {
-      setShowLoginModal(true)
-      return
-    }
-    // Navigation will be handled by Link component
-  }
 
   const handleLogout = () => {
     logout()
-    setIsMenuOpen(false)
-  }
-
-  const handleMyProfile = () => {
-    if (user) {
-      window.location.href = `/myprofile`
-    }
   }
 
   return (
@@ -57,65 +26,49 @@ export default function Header() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
                 <span className="text-blue-900 font-bold text-sm">OP</span>
               </div>
-              <span className="text-xl font-bold">One Piece TCG Market</span>
+              <span className="font-bold text-xl">TCG Marketplace</span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href || (item.href === "/profile" && pathname.startsWith("/profile"))
-                return (
-                  <div key={item.href}>
-                    {item.protected && !user ? (
-                      <Button
-                        variant="ghost"
-                        className={`flex items-center space-x-2 text-white hover:text-yellow-400 hover:bg-blue-800`}
-                        onClick={() => handleProtectedNavigation(item.href, item.protected)}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </Button>
-                    ) : (
-                      <Link href={item.href}>
-                        <Button
-                          variant="ghost"
-                          className={`flex items-center space-x-2 text-white hover:text-yellow-400 hover:bg-blue-800 ${
-                            isActive ? "bg-blue-800 text-yellow-400" : ""
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span>{item.label}</span>
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                )
-              })}
+            <nav className="hidden md:flex items-center space-x-8">
+              <Link href="/" className="hover:text-yellow-400 transition-colors">
+                Home
+              </Link>
+              <Link href="/sell" className="hover:text-yellow-400 transition-colors">
+                Sell Cards
+              </Link>
+              <Link href="/profile" className="hover:text-yellow-400 transition-colors">
+                Profiles
+              </Link>
+              <Link href="/chats" className="hover:text-yellow-400 transition-colors">
+                Chats
+              </Link>
+              <Link href="/news" className="hover:text-yellow-400 transition-colors">
+                News
+              </Link>
             </nav>
 
-            {/* User Menu / Auth Buttons */}
-            <div className="hidden md:flex items-center">
+            {/* User Menu */}
+            <div className="hidden md:flex items-center space-x-4">
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2 text-white hover:bg-blue-800">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <span>{user.username}</span>
+                    <Button variant="ghost" className="text-white hover:text-yellow-400 hover:bg-blue-800">
+                      <User className="w-4 h-4 mr-2" />
+                      {user.username}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={handleMyProfile} className="flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      My Profile
+                    <DropdownMenuItem asChild>
+                      <Link href="/myprofile" className="flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        My Profile
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <DropdownMenuItem onClick={handleLogout} className="flex items-center">
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
                     </DropdownMenuItem>
@@ -125,146 +78,112 @@ export default function Header() {
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
-                    className="text-white hover:bg-blue-800"
+                    className="text-white hover:text-yellow-400 hover:bg-blue-800"
                     onClick={() => setShowLoginModal(true)}
                   >
-                    Sign In
+                    Login
                   </Button>
                   <Button
                     variant="outline"
-                    className="text-blue-900 border-white hover:bg-white bg-transparent"
+                    className="border-white text-white hover:bg-white hover:text-blue-900 bg-transparent"
                     onClick={() => setShowRegisterModal(true)}
                   >
-                    Sign Up
+                    Register
                   </Button>
                 </div>
               )}
             </div>
 
             {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden text-white"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
+            <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <nav className="md:hidden pb-4 border-t border-blue-800 pt-4">
-              <div className="flex flex-col space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive =
-                    pathname === item.href || (item.href === "/profile" && pathname.startsWith("/profile"))
-                  return (
-                    <div key={item.href}>
-                      {item.protected && !user ? (
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-white hover:text-yellow-400 hover:bg-blue-800"
-                          onClick={() => {
-                            handleProtectedNavigation(item.href, item.protected)
-                            setIsMenuOpen(false)
-                          }}
-                        >
-                          <Icon className="w-4 h-4 mr-2" />
-                          {item.label}
-                        </Button>
-                      ) : (
-                        <Link href={item.href}>
-                          <Button
-                            variant="ghost"
-                            className={`w-full justify-start text-white hover:text-yellow-400 hover:bg-blue-800 ${
-                              isActive ? "bg-blue-800 text-yellow-400" : ""
-                            }`}
-                            onClick={() => setIsMenuOpen(false)}
-                          >
-                            <Icon className="w-4 h-4 mr-2" />
-                            {item.label}
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  )
-                })}
-
-                {/* Mobile Auth Section */}
-                <div className="border-t border-blue-800 pt-2 mt-2">
-                  {user ? (
-                    <>
-                      <div className="px-3 py-2 text-sm text-gray-300">Signed in as {user.username}</div>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-white hover:bg-blue-800"
-                        onClick={() => {
-                          handleMyProfile()
-                          setIsMenuOpen(false)
-                        }}
-                      >
-                        <User className="w-4 h-4 mr-2" />
-                        My Profile
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-blue-800"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-white hover:bg-blue-800"
-                        onClick={() => {
-                          setShowLoginModal(true)
-                          setIsMenuOpen(false)
-                        }}
-                      >
-                        Sign In
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-white hover:bg-blue-800"
-                        onClick={() => {
-                          setShowRegisterModal(true)
-                          setIsMenuOpen(false)
-                        }}
-                      >
-                        Sign Up
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </nav>
+            <div className="md:hidden py-4 border-t border-blue-800">
+              <nav className="flex flex-col space-y-4">
+                <Link href="/" className="hover:text-yellow-400 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                  Home
+                </Link>
+                <Link
+                  href="/sell"
+                  className="hover:text-yellow-400 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sell Cards
+                </Link>
+                <Link
+                  href="/profile"
+                  className="hover:text-yellow-400 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profiles
+                </Link>
+                <Link
+                  href="/chats"
+                  className="hover:text-yellow-400 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Chats
+                </Link>
+                <Link
+                  href="/news"
+                  className="hover:text-yellow-400 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  News
+                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      href="/myprofile"
+                      className="hover:text-yellow-400 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsMenuOpen(false)
+                      }}
+                      className="text-left hover:text-yellow-400 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowLoginModal(true)
+                        setIsMenuOpen(false)
+                      }}
+                      className="text-left hover:text-yellow-400 transition-colors"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowRegisterModal(true)
+                        setIsMenuOpen(false)
+                      }}
+                      className="text-left hover:text-yellow-400 transition-colors"
+                    >
+                      Register
+                    </button>
+                  </>
+                )}
+              </nav>
+            </div>
           )}
         </div>
       </header>
 
-      {/* Auth Modals */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSwitchToRegister={() => {
-          setShowLoginModal(false)
-          setShowRegisterModal(true)
-        }}
-      />
-      <RegisterModal
-        isOpen={showRegisterModal}
-        onClose={() => setShowRegisterModal(false)}
-        onSwitchToLogin={() => {
-          setShowRegisterModal(false)
-          setShowLoginModal(true)
-        }}
-      />
+      <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
+      <RegisterModal open={showRegisterModal} onOpenChange={setShowRegisterModal} />
     </>
   )
 }

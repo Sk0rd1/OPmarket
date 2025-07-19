@@ -3,36 +3,59 @@
 import type React from "react"
 
 import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
-import { Eye, EyeOff, User, Lock, Edit3, Check, X } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
+import { Eye, EyeOff, Upload } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "@/hooks/use-toast"
 
 interface EditProfileModalProps {
-  isOpen: boolean
-  onClose: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
   user: any
 }
 
-export default function EditProfileModal({ isOpen, onClose, user }: EditProfileModalProps) {
-  const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("profile")
-  const [isLoading, setIsLoading] = useState(false)
+const characterAvatars = [
+  { name: "Luffy", image: "/placeholder.svg?height=60&width=60&text=Luffy" },
+  { name: "Zoro", image: "/placeholder.svg?height=60&width=60&text=Zoro" },
+  { name: "Nami", image: "/placeholder.svg?height=60&width=60&text=Nami" },
+  { name: "Usopp", image: "/placeholder.svg?height=60&width=60&text=Usopp" },
+  { name: "Sanji", image: "/placeholder.svg?height=60&width=60&text=Sanji" },
+  { name: "Chopper", image: "/placeholder.svg?height=60&width=60&text=Chopper" },
+  { name: "Robin", image: "/placeholder.svg?height=60&width=60&text=Robin" },
+  { name: "Franky", image: "/placeholder.svg?height=60&width=60&text=Franky" },
+  { name: "Brook", image: "/placeholder.svg?height=60&width=60&text=Brook" },
+  { name: "Jinbe", image: "/placeholder.svg?height=60&width=60&text=Jinbe" },
+  { name: "Ace", image: "/placeholder.svg?height=60&width=60&text=Ace" },
+  { name: "Sabo", image: "/placeholder.svg?height=60&width=60&text=Sabo" },
+  { name: "Law", image: "/placeholder.svg?height=60&width=60&text=Law" },
+  { name: "Kid", image: "/placeholder.svg?height=60&width=60&text=Kid" },
+  { name: "Shanks", image: "/placeholder.svg?height=60&width=60&text=Shanks" },
+  { name: "Mihawk", image: "/placeholder.svg?height=60&width=60&text=Mihawk" },
+  { name: "Whitebeard", image: "/placeholder.svg?height=60&width=60&text=WB" },
+  { name: "Kaido", image: "/placeholder.svg?height=60&width=60&text=Kaido" },
+  { name: "Big Mom", image: "/placeholder.svg?height=60&width=60&text=BM" },
+  { name: "Blackbeard", image: "/placeholder.svg?height=60&width=60&text=BB" },
+]
 
-  // Profile form state
+export default function EditProfileModal({ open, onOpenChange, user }: EditProfileModalProps) {
+  const { updateUser } = useAuth()
+  const [activeTab, setActiveTab] = useState("profile")
+
+  // Profile tab state
   const [aboutMe, setAboutMe] = useState(user?.aboutMe || "")
 
-  // Avatar form state
-  const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || "")
+  // Avatar tab state
+  const [selectedAvatar, setSelectedAvatar] = useState("")
   const [customAvatar, setCustomAvatar] = useState<File | null>(null)
 
-  // Password form state
+  // Password tab state
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -40,79 +63,38 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Character avatars
-  const characterAvatars = [
-    { name: "Luffy", url: "/placeholder.svg?height=80&width=80&text=Luffy" },
-    { name: "Zoro", url: "/placeholder.svg?height=80&width=80&text=Zoro" },
-    { name: "Nami", url: "/placeholder.svg?height=80&width=80&text=Nami" },
-    { name: "Usopp", url: "/placeholder.svg?height=80&width=80&text=Usopp" },
-    { name: "Sanji", url: "/placeholder.svg?height=80&width=80&text=Sanji" },
-    { name: "Chopper", url: "/placeholder.svg?height=80&width=80&text=Chopper" },
-    { name: "Robin", url: "/placeholder.svg?height=80&width=80&text=Robin" },
-    { name: "Franky", url: "/placeholder.svg?height=80&width=80&text=Franky" },
-    { name: "Brook", url: "/placeholder.svg?height=80&width=80&text=Brook" },
-    { name: "Jinbe", url: "/placeholder.svg?height=80&width=80&text=Jinbe" },
-    { name: "Ace", url: "/placeholder.svg?height=80&width=80&text=Ace" },
-    { name: "Sabo", url: "/placeholder.svg?height=80&width=80&text=Sabo" },
-    { name: "Law", url: "/placeholder.svg?height=80&width=80&text=Law" },
-    { name: "Kid", url: "/placeholder.svg?height=80&width=80&text=Kid" },
-    { name: "Shanks", url: "/placeholder.svg?height=80&width=80&text=Shanks" },
-    { name: "Whitebeard", url: "/placeholder.svg?height=80&width=80&text=WB" },
-    { name: "Kaido", url: "/placeholder.svg?height=80&width=80&text=Kaido" },
-    { name: "Big Mom", url: "/placeholder.svg?height=80&width=80&text=BM" },
-    { name: "Doflamingo", url: "/placeholder.svg?height=80&width=80&text=Doffy" },
-    { name: "Crocodile", url: "/placeholder.svg?height=80&width=80&text=Croc" },
-  ]
-
-  const handleSaveProfile = async () => {
-    setIsLoading(true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile information has been successfully updated.",
-      })
-      onClose()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+  const handleSaveProfile = () => {
+    updateUser({ ...user, aboutMe })
+    toast({
+      title: "Profile Updated",
+      description: "Your profile information has been saved successfully.",
+    })
+    onOpenChange(false)
   }
 
-  const handleSaveAvatar = async () => {
-    setIsLoading(true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
+  const handleSaveAvatar = () => {
+    if (selectedAvatar) {
+      updateUser({ ...user, avatar: selectedAvatar })
       toast({
-        title: "Avatar updated",
-        description: "Your profile avatar has been successfully updated.",
+        title: "Avatar Updated",
+        description: "Your avatar has been changed successfully.",
       })
-      onClose()
-    } catch (error) {
+    } else if (customAvatar) {
+      // In a real app, you'd upload the file here
+      updateUser({ ...user, avatar: "custom" })
       toast({
-        title: "Error",
-        description: "Failed to update avatar. Please try again.",
-        variant: "destructive",
+        title: "Avatar Updated",
+        description: "Your custom avatar has been uploaded successfully.",
       })
-    } finally {
-      setIsLoading(false)
     }
+    onOpenChange(false)
   }
 
-  const handleSavePassword = async () => {
+  const handleSavePassword = () => {
     if (newPassword !== confirmPassword) {
       toast({
         title: "Error",
-        description: "New passwords do not match.",
+        description: "New passwords don't match.",
         variant: "destructive",
       })
       return
@@ -127,87 +109,45 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
       return
     }
 
-    setIsLoading(true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast({
-        title: "Password updated",
-        description: "Your password has been successfully changed.",
-      })
-
-      // Clear form
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-      onClose()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update password. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    // In a real app, you'd verify the current password and update it
+    toast({
+      title: "Password Updated",
+      description: "Your password has been changed successfully.",
+    })
+    setCurrentPassword("")
+    setNewPassword("")
+    setConfirmPassword("")
+    onOpenChange(false)
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "File too large",
-          description: "Please select an image smaller than 5MB.",
+          title: "Error",
+          description: "File size must be less than 5MB.",
           variant: "destructive",
         })
         return
       }
-
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an image file.",
-          variant: "destructive",
-        })
-        return
-      }
-
       setCustomAvatar(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setSelectedAvatar(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+      setSelectedAvatar("")
     }
   }
 
-  const isPasswordValid = newPassword.length >= 8
-  const doPasswordsMatch = newPassword === confirmPassword && newPassword.length > 0
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>Update your profile information, avatar, or change your password.</DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <Edit3 className="w-4 h-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="avatar" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Avatar
-            </TabsTrigger>
-            <TabsTrigger value="password" className="flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              Password
-            </TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="avatar">Avatar</TabsTrigger>
+            <TabsTrigger value="password">Password</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -216,65 +156,51 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                 <Label htmlFor="aboutMe">About Me</Label>
                 <Textarea
                   id="aboutMe"
-                  placeholder="Tell other traders about yourself, your collecting interests, and trading preferences..."
+                  placeholder="Tell others about yourself, your trading preferences, specialties, etc."
                   value={aboutMe}
                   onChange={(e) => setAboutMe(e.target.value)}
-                  className="min-h-[120px] resize-none"
                   maxLength={500}
+                  rows={6}
+                  className="resize-none"
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-sm text-gray-500">
-                    Share your collecting interests, trading preferences, and what makes you a great trader!
+                    Share your trading style, favorite cards, or anything that helps other traders know you better.
                   </p>
-                  <span className={`text-sm ${aboutMe.length > 450 ? "text-red-500" : "text-gray-400"}`}>
-                    {aboutMe.length}/500
-                  </span>
+                  <span className="text-sm text-gray-400">{aboutMe.length}/500</span>
                 </div>
               </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Changes"}
-              </Button>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveProfile}>Save Profile</Button>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="avatar" className="space-y-4">
             <div className="space-y-4">
-              <div className="text-center">
-                <Avatar className="w-24 h-24 mx-auto mb-4">
-                  <AvatarImage src={selectedAvatar || "/placeholder.svg"} alt="Profile" />
-                  <AvatarFallback>
-                    <User className="w-12 h-12" />
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-sm text-gray-600">Current avatar</p>
-              </div>
-
               <div>
                 <Label>Choose Character Avatar</Label>
                 <div className="grid grid-cols-5 gap-3 mt-2">
-                  {characterAvatars.map((character) => (
+                  {characterAvatars.map((avatar) => (
                     <Card
-                      key={character.name}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedAvatar === character.url ? "ring-2 ring-blue-500" : ""
+                      key={avatar.name}
+                      className={`cursor-pointer transition-all hover:scale-105 ${
+                        selectedAvatar === avatar.name ? "ring-2 ring-blue-500" : ""
                       }`}
                       onClick={() => {
-                        setSelectedAvatar(character.url)
+                        setSelectedAvatar(avatar.name)
                         setCustomAvatar(null)
                       }}
                     >
-                      <CardContent className="p-2">
-                        <Avatar className="w-12 h-12 mx-auto mb-1">
-                          <AvatarImage src={character.url || "/placeholder.svg"} alt={character.name} />
-                          <AvatarFallback>{character.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <p className="text-xs text-center font-medium">{character.name}</p>
+                      <CardContent className="p-2 text-center">
+                        <img
+                          src={avatar.image || "/placeholder.svg"}
+                          alt={avatar.name}
+                          className="w-12 h-12 rounded-full mx-auto mb-1"
+                        />
+                        <Badge variant="outline" className="text-xs">
+                          {avatar.name}
+                        </Badge>
                       </CardContent>
                     </Card>
                   ))}
@@ -282,27 +208,30 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
               </div>
 
               <div className="border-t pt-4">
-                <Label htmlFor="custom-avatar">Or Upload Custom Image</Label>
+                <Label htmlFor="customAvatar">Or Upload Custom Avatar</Label>
                 <div className="mt-2">
                   <Input
-                    id="custom-avatar"
+                    id="customAvatar"
                     type="file"
                     accept="image/*"
-                    onChange={handleFileUpload}
+                    onChange={handleCustomAvatarChange}
                     className="cursor-pointer"
                   />
                   <p className="text-sm text-gray-500 mt-1">Maximum file size: 5MB. Supported formats: JPG, PNG, GIF</p>
+                  {customAvatar && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-green-600" />
+                      <span className="text-sm text-green-600">{customAvatar.name} selected</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveAvatar} disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Avatar"}
-              </Button>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveAvatar} disabled={!selectedAvatar && !customAvatar}>
+                  Save Avatar
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -339,7 +268,6 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter your new password"
-                    className={newPassword.length > 0 ? (isPasswordValid ? "border-green-500" : "border-red-500") : ""}
                   />
                   <Button
                     type="button"
@@ -351,18 +279,7 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-                {newPassword.length > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {isPasswordValid ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <X className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className={`text-sm ${isPasswordValid ? "text-green-600" : "text-red-600"}`}>
-                      {isPasswordValid ? "Password meets requirements" : "Password must be at least 8 characters"}
-                    </span>
-                  </div>
-                )}
+                <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters long</p>
               </div>
 
               <div>
@@ -374,9 +291,6 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your new password"
-                    className={
-                      confirmPassword.length > 0 ? (doPasswordsMatch ? "border-green-500" : "border-red-500") : ""
-                    }
                   />
                   <Button
                     type="button"
@@ -388,31 +302,19 @@ export default function EditProfileModal({ isOpen, onClose, user }: EditProfileM
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-                {confirmPassword.length > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {doPasswordsMatch ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <X className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className={`text-sm ${doPasswordsMatch ? "text-green-600" : "text-red-600"}`}>
-                      {doPasswordsMatch ? "Passwords match" : "Passwords do not match"}
-                    </span>
-                  </div>
+                {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-sm text-red-500 mt-1">Passwords don't match</p>
                 )}
               </div>
-            </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSavePassword}
-                disabled={isLoading || !currentPassword || !isPasswordValid || !doPasswordsMatch}
-              >
-                {isLoading ? "Updating..." : "Update Password"}
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSavePassword}
+                  disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                >
+                  Change Password
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
