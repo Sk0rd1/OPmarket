@@ -26,7 +26,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://192.168.31.78:3000")
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -79,90 +79,6 @@ app.MapGet("/api/test-db", async (ApplicationDbContext context) =>
     }
 });
 
-// Endpoint для карт
-app.MapGet("/api/cards", async (ApplicationDbContext context,
-    [FromQuery] int page = 1, 
-    [FromQuery] int limit = 20,
-    [FromQuery] string? search = null) =>
-{
-    try
-    {
-        var query = context.Cards.AsQueryable();
-
-        // Пошук по назві
-        if (!string.IsNullOrEmpty(search))
-        {
-            query = query.Where(c => c.Name.ToLower().Contains(search.ToLower()) ||
-                                   c.BaseCardId.ToLower().Contains(search.ToLower()));
-        }
-
-        // Загальна кількість
-        var totalCount = await query.CountAsync();
-
-        // Пагінація
-        var cards = await query
-            .OrderByDescending(c => c.CreatedAt)
-            .Skip((page - 1) * limit)
-            .Take(limit)
-            .ToListAsync();
-
-        // Конвертуємо в формат для фронтенду
-        var cardDtos = cards.Select(card => new
-        {
-            productId = card.ProductId,
-            baseCardId = card.BaseCardId,
-            name = card.Name,
-            cardTypeDetail = card.CardTypeDetail,
-            effect = card.Effect,
-            power = card.Power,
-            cost = card.Cost,
-            life = card.Life,
-            counter = card.Counter,
-            attribute = card.Attribute,
-            rarity = card.Rarity ?? "C",
-            setCode = card.SetCode,
-            artist = card.Artist,
-            imageUrl = card.ImageUrl,
-            language = card.Language,
-            isAlternateArt = card.IsAlternateArt,
-            seriesName = card.SeriesName,
-            colors = new[] { new { 
-                code = "Red", 
-                name = "Red", 
-                hexColor = "#FF0000", 
-                isPrimary = true 
-            }}, // Mock colors для спрощення
-            listings = new[] { new { 
-                id = Guid.NewGuid(),
-                conditionCode = "NM",
-                conditionName = "Near Mint",
-                price = 25.99m,
-                quantity = 1,
-                description = "Great condition",
-                sellerUsername = "TestSeller",
-                sellerRating = 4.5m,
-                isVerifiedSeller = true,
-                createdAt = DateTime.UtcNow
-            }}, // Mock listings
-            minPrice = 25.99m,
-            listingCount = 1
-        }).ToArray();
-
-        return Results.Ok(new
-        {
-            data = cardDtos,  // ВАЖЛИВО: маленька літера
-            totalCount = totalCount,
-            page = page,
-            limit = limit,
-            totalPages = (int)Math.Ceiling((double)totalCount / limit)
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem($"Error fetching cards: {ex.Message}");
-    }
-});
-
 // Featured cards endpoint
 app.MapGet("/api/cards/featured", async (ApplicationDbContext context, [FromQuery] int limit = 10) =>
 {
@@ -200,4 +116,6 @@ app.MapGet("/api/cards/featured", async (ApplicationDbContext context, [FromQuer
     }
 });
 
-app.Run("http://0.0.0.0:5000");
+app.Urls.Add("http://localhost:5000");
+app.Urls.Add("http://192.168.31.78:5000");
+app.Run();
