@@ -1,5 +1,6 @@
 import type { Card } from "./types"
 
+// Generate expanded mock data with 50+ cards
 export const mockCards: Card[] = [
   {
     id: "EB01-006",
@@ -18,25 +19,12 @@ export const mockCards: Card[] = [
     series_id: "569301",
     series_name: "ONE PIECE CARD THE BEST- [PRB-01]",
     market_price: 25.99,
-    listings: generateListings("EB01-006", 27), // 27 listings for pagination demo
-  },
-  {
-    id: "OP01-001",
-    name: "Monkey.D.Luffy",
-    rarity: "L",
-    type: "LEADER",
-    attribute: "Strike",
-    power: 5000,
-    counter: 0,
-    color: "Red",
-    card_type: "Straw Hat Crew",
-    effect: "[DON!! x1] [When Attacking] Give up to 1 of your Leader or Character cards +1000 power during this turn.",
-    image_url: "/placeholder.svg?height=838&width=600",
-    alternate_art: false,
-    series_id: "569302",
-    series_name: "BOOSTER PACK ROMANCE DAWN [OP-01]",
-    market_price: 15.99,
-    listings: generateListings("OP01-001", 8),
+    listings: Array.from({ length: 27 }, (_, i) => ({
+      seller: `Seller${i + 1}`,
+      condition: ["Near Mint", "Lightly Played", "Moderately Played"][i % 3],
+      price: 25.99 + (Math.random() - 0.5) * 10,
+      quantity: Math.floor(Math.random() * 3) + 1,
+    })),
   },
   {
     id: "OP01-025",
@@ -54,152 +42,36 @@ export const mockCards: Card[] = [
     series_id: "569302",
     series_name: "BOOSTER PACK ROMANCE DAWN [OP-01]",
     market_price: 45.99,
-    listings: generateListings("OP01-025", 12),
+    listings: [
+      { seller: "OnePieceCollector", condition: "Near Mint", price: 45.99, quantity: 1 },
+      { seller: "SwordMaster", condition: "Near Mint", price: 47.5, quantity: 2 },
+      { seller: "CardMaster123", condition: "Lightly Played", price: 42.0, quantity: 1 },
+    ],
   },
-  {
-    id: "OP01-039",
-    name: "Nami",
-    rarity: "R",
-    type: "CHARACTER",
-    attribute: "Special",
-    power: 1000,
-    counter: 1000,
-    color: "Blue",
-    card_type: "Navigator/Straw Hat Crew",
-    effect:
-      "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Straw Hat Crew} type card other than [Nami] and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
-    image_url: "/placeholder.svg?height=838&width=600",
-    alternate_art: false,
-    series_id: "569302",
-    series_name: "BOOSTER PACK ROMANCE DAWN [OP-01]",
-    market_price: 8.99,
-    listings: generateListings("OP01-039", 15),
-  },
-  {
-    id: "OP02-013",
-    name: "Portgas.D.Ace",
-    rarity: "SEC",
-    type: "CHARACTER",
-    attribute: "Special",
-    power: 5000,
-    counter: 1000,
-    color: "Red",
-    card_type: "Whitebeard Pirates",
-    effect:
-      "[Rush] (This card can attack on the turn in which it is played.)[DON!! x2] [When Attacking] Give up to 1 of your opponent's Characters −5000 power during this turn.",
-    image_url: "/placeholder.svg?height=838&width=600",
-    alternate_art: true,
-    series_id: "569303",
-    series_name: "BOOSTER PACK PARAMOUNT WAR [OP-02]",
-    market_price: 89.99,
-    listings: generateListings("OP02-013", 6),
-  },
-  // Adding 35+ more cards for pagination
-  ...generateAdditionalCards(),
-]
-
-function generateListings(cardId: string, count: number) {
-  const sellers = [
-    "CardMaster123",
-    "OnePieceCollector",
-    "StrawHatDealer",
-    "SwordMaster",
-    "ZoroFan88",
-    "NavigatorCards",
-    "FireFistCollector",
-    "CookingCards",
-    "ArchaeologyExpert",
-    "EmperorCards",
-    "RedHairCollector",
-    "EventCards",
-    "WhitebeardFan",
-    "ShipCollector",
-    "PirateKing2024",
-    "GrandLineTrader",
-    "DevilFruitUser",
-    "MarineHunter",
-    "TreasureSeeker",
-    "OnePieceFan99",
-    "CardCollector2024",
-    "TCGMaster",
-    "AnimeFan123",
-    "TradingCardPro",
-    "CollectibleKing",
-  ]
-
-  const conditions = ["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played"]
-
-  return Array.from({ length: count }, (_, i) => ({
-    seller: sellers[i % sellers.length],
-    condition: conditions[i % conditions.length],
-    price: Math.round((Math.random() * 50 + 10) * 100) / 100,
-    quantity: Math.floor(Math.random() * 3) + 1,
-  }))
-}
-
-function generateAdditionalCards(): Card[] {
-  const cardTemplates = [
-    { name: "Sanji", rarity: "R", color: "Yellow", type: "CHARACTER", power: 4000 },
-    { name: "Nico Robin", rarity: "R", color: "Purple", type: "CHARACTER", power: 2000 },
-    { name: "Kaido", rarity: "SEC", color: "Purple", type: "CHARACTER", power: 10000 },
-    { name: "Shanks", rarity: "SEC", color: "Red", type: "CHARACTER", power: 9000 },
-    { name: "Gum-Gum Jet Pistol", rarity: "UC", color: "Red", type: "EVENT", power: 0 },
-    { name: "Edward.Newgate", rarity: "L", color: "Red", type: "LEADER", power: 5000 },
-    { name: "Thousand Sunny", rarity: "R", color: "Multicolor", type: "STAGE", power: 0 },
-    { name: "Usopp", rarity: "C", color: "Yellow", type: "CHARACTER", power: 2000 },
-    { name: "Franky", rarity: "R", color: "Blue", type: "CHARACTER", power: 4000 },
-    { name: "Brook", rarity: "R", color: "Yellow", type: "CHARACTER", power: 3000 },
-    { name: "Jinbe", rarity: "SR", color: "Blue", type: "CHARACTER", power: 5000 },
-    { name: "Trafalgar Law", rarity: "SR", color: "Purple", type: "CHARACTER", power: 5000 },
-    { name: "Eustass Kid", rarity: "SR", color: "Red", type: "CHARACTER", power: 5000 },
-    { name: "Charlotte Katakuri", rarity: "SR", color: "Purple", type: "CHARACTER", power: 6000 },
-    { name: "Big Mom", rarity: "SEC", color: "Yellow", type: "CHARACTER", power: 9000 },
-    { name: "Dracule Mihawk", rarity: "SR", color: "Green", type: "CHARACTER", power: 7000 },
-    { name: "Crocodile", rarity: "R", color: "Purple", type: "CHARACTER", power: 4000 },
-    { name: "Boa Hancock", rarity: "SR", color: "Blue", type: "CHARACTER", power: 4000 },
-    { name: "Sabo", rarity: "R", color: "Red", type: "CHARACTER", power: 4000 },
-    { name: "Marco", rarity: "SR", color: "Blue", type: "CHARACTER", power: 4000 },
-    { name: "Whitebeard", rarity: "L", color: "Red", type: "LEADER", power: 5000 },
-    { name: "Blackbeard", rarity: "L", color: "Black", type: "LEADER", power: 5000 },
-    { name: "Akainu", rarity: "SR", color: "Red", type: "CHARACTER", power: 6000 },
-    { name: "Kizaru", rarity: "R", color: "Yellow", type: "CHARACTER", power: 5000 },
-    { name: "Aokiji", rarity: "R", color: "Blue", type: "CHARACTER", power: 5000 },
-    { name: "Garp", rarity: "R", color: "Blue", type: "CHARACTER", power: 5000 },
-    { name: "Sengoku", rarity: "R", color: "Yellow", type: "CHARACTER", power: 5000 },
-    { name: "Smoker", rarity: "UC", color: "Blue", type: "CHARACTER", power: 3000 },
-    { name: "Tashigi", rarity: "C", color: "Blue", type: "CHARACTER", power: 2000 },
-    { name: "Buggy", rarity: "UC", color: "Red", type: "CHARACTER", power: 2000 },
-    { name: "Alvida", rarity: "C", color: "Red", type: "CHARACTER", power: 2000 },
-    { name: "Don Krieg", rarity: "UC", color: "Black", type: "CHARACTER", power: 3000 },
-    { name: "Arlong", rarity: "R", color: "Blue", type: "CHARACTER", power: 4000 },
-    { name: "Kuro", rarity: "UC", color: "Black", type: "CHARACTER", power: 3000 },
-    { name: "Gin", rarity: "C", color: "Black", type: "CHARACTER", power: 2000 },
-    { name: "Wapol", rarity: "UC", color: "Purple", type: "CHARACTER", power: 3000 },
-    { name: "Dalton", rarity: "C", color: "Green", type: "CHARACTER", power: 2000 },
-    { name: "Vivi", rarity: "R", color: "Blue", type: "CHARACTER", power: 1000 },
-    { name: "Pell", rarity: "UC", color: "Yellow", type: "CHARACTER", power: 3000 },
-    { name: "Chaka", rarity: "UC", color: "Yellow", type: "CHARACTER", power: 3000 },
-  ]
-
-  return cardTemplates.map((template, index) => ({
-    id: `OP0${Math.floor(index / 10) + 3}-${String(index % 100).padStart(3, "0")}`,
-    name: template.name,
-    rarity: template.rarity,
-    type: template.type,
-    attribute: ["Strike", "Slash", "Ranged", "Special", "Wisdom"][index % 5],
-    power: template.power,
-    counter: template.type === "LEADER" ? 0 : 1000,
-    color: template.color,
-    card_type: "Character",
-    effect: `[Sample Effect] This is a sample effect for ${template.name}.`,
+  // Generate additional cards
+  ...Array.from({ length: 48 }, (_, i) => ({
+    id: `OP01-${String(i + 100).padStart(3, "0")}`,
+    name: `One Piece Card ${i + 1}`,
+    rarity: ["C", "UC", "R", "SR", "SEC"][Math.floor(Math.random() * 5)],
+    type: ["CHARACTER", "EVENT", "STAGE"][Math.floor(Math.random() * 3)],
+    attribute: ["Strike", "Slash", "Ranged", "Special"][Math.floor(Math.random() * 4)],
+    power: Math.floor(Math.random() * 10000) + 1000,
+    counter: Math.floor(Math.random() * 2000) + 500,
+    color: ["Red", "Blue", "Green", "Yellow", "Purple", "Black"][Math.floor(Math.random() * 6)],
+    card_type: "Character/Crew",
+    effect: `[Effect ${i + 1}] This card has a special effect that activates under certain conditions.`,
     image_url: "/placeholder.svg?height=838&width=600",
     alternate_art: Math.random() > 0.8,
-    series_id: `56930${Math.floor(index / 20) + 1}`,
-    series_name: `BOOSTER PACK SERIES ${Math.floor(index / 20) + 1}`,
-    market_price: Math.round((Math.random() * 100 + 5) * 100) / 100,
-    listings: generateListings(
-      `OP0${Math.floor(index / 10) + 3}-${String(index % 100).padStart(3, "0")}`,
-      Math.floor(Math.random() * 10) + 3,
-    ),
-  }))
-}
+    series_id: "569302",
+    series_name: ["BOOSTER PACK ROMANCE DAWN [OP-01]", "BOOSTER PACK PARAMOUNT WAR [OP-02]"][
+      Math.floor(Math.random() * 2)
+    ],
+    market_price: Math.floor(Math.random() * 100) + 5,
+    listings: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, j) => ({
+      seller: [`CardTrader${j + 1}`, "OnePieceCollector", "SwordMaster", "CardMaster123"][j % 4],
+      condition: ["Near Mint", "Lightly Played", "Moderately Played"][j % 3],
+      price: Math.floor(Math.random() * 100) + 5 + (Math.random() - 0.5) * 10,
+      quantity: Math.floor(Math.random() * 3) + 1,
+    })),
+  })),
+]

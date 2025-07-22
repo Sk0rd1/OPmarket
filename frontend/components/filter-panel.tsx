@@ -1,14 +1,14 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { RotateCcw } from "lucide-react"
+import { Search, X } from "lucide-react"
 import type { FilterState } from "@/lib/types"
 
 interface FilterPanelProps {
@@ -17,29 +17,16 @@ interface FilterPanelProps {
 }
 
 export default function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
-  const rarities = ["C", "UC", "R", "SR", "SEC", "L", "P"]
-  const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Multicolor"]
-  const types = ["CHARACTER", "EVENT", "STAGE", "LEADER"]
-  const attributes = ["Strike", "Slash", "Ranged", "Special", "Wisdom"]
-  const series = [
-    "BOOSTER PACK ROMANCE DAWN [OP-01]",
-    "BOOSTER PACK PARAMOUNT WAR [OP-02]",
-    "BOOSTER PACK PILLARS OF STRENGTH [OP-03]",
-    "ONE PIECE CARD THE BEST- [PRB-01]",
-  ]
+  const [localFilters, setLocalFilters] = useState(filters)
 
-  const handleRarityChange = (rarity: string, checked: boolean) => {
-    const newRarities = checked ? [...filters.rarity, rarity] : filters.rarity.filter((r) => r !== rarity)
-    onFiltersChange({ ...filters, rarity: newRarities })
+  const updateFilter = (key: keyof FilterState, value: any) => {
+    const newFilters = { ...localFilters, [key]: value }
+    setLocalFilters(newFilters)
+    onFiltersChange(newFilters)
   }
 
-  const handleColorChange = (color: string, checked: boolean) => {
-    const newColors = checked ? [...filters.color, color] : filters.color.filter((c) => c !== color)
-    onFiltersChange({ ...filters, color: newColors })
-  }
-
-  const resetFilters = () => {
-    onFiltersChange({
+  const clearFilters = () => {
+    const clearedFilters: FilterState = {
       search: "",
       sellerSearch: "",
       rarity: [],
@@ -50,58 +37,74 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
       powerRange: [0, 12000],
       attribute: "",
       sortBy: "name-asc",
-    })
+    }
+    setLocalFilters(clearedFilters)
+    onFiltersChange(clearedFilters)
+  }
+
+  const rarities = ["C", "UC", "R", "SR", "SEC", "L", "P"]
+  const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Multicolor"]
+  const types = ["CHARACTER", "EVENT", "STAGE", "LEADER"]
+  const attributes = ["Strike", "Slash", "Ranged", "Special"]
+  const series = [
+    "BOOSTER PACK ROMANCE DAWN [OP-01]",
+    "BOOSTER PACK PARAMOUNT WAR [OP-02]",
+    "BOOSTER PACK PILLARS OF STRENGTH [OP-03]",
+    "ONE PIECE CARD THE BEST- [PRB-01]",
+  ]
+
+  const handleRarityChange = (rarity: string, checked: boolean) => {
+    const newRarities = checked ? [...localFilters.rarity, rarity] : localFilters.rarity.filter((r) => r !== rarity)
+    updateFilter("rarity", newRarities)
+  }
+
+  const handleColorChange = (color: string, checked: boolean) => {
+    const newColors = checked ? [...localFilters.color, color] : localFilters.color.filter((c) => c !== color)
+    updateFilter("color", newColors)
   }
 
   return (
-    <Card className="sticky top-6">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg">Filters</CardTitle>
-        <Button variant="outline" size="sm" onClick={resetFilters} className="flex items-center gap-2 bg-transparent">
-          <RotateCcw className="w-4 h-4" />
-          Reset
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Search */}
-        <div>
-          <Label htmlFor="search" className="text-sm font-medium">
-            Search by Name
-          </Label>
-          <Input
-            id="search"
-            placeholder="Search cards by name..."
-            value={filters.search}
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            className="mt-1"
-          />
-        </div>
+    <div className="space-y-4">
+      {/* Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Search</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search cards..."
+              value={localFilters.search}
+              onChange={(e) => updateFilter("search", e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-        {/* Seller Search */}
-        <div>
-          <Label htmlFor="sellerSearch" className="text-sm font-medium">
-            Search by Seller
-          </Label>
-          <Input
-            id="sellerSearch"
-            placeholder="Search by seller nickname..."
-            value={filters.sellerSearch}
-            onChange={(e) => onFiltersChange({ ...filters, sellerSearch: e.target.value })}
-            className="mt-1"
-          />
-        </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search by seller..."
+              value={localFilters.sellerSearch}
+              onChange={(e) => updateFilter("sellerSearch", e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/* Rarity */}
-        <div>
-          <Label className="text-sm font-medium mb-3 block">Rarity</Label>
-          <div className="grid grid-cols-2 gap-2">
+      {/* Rarity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Rarity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
             {rarities.map((rarity) => (
               <div key={rarity} className="flex items-center space-x-2">
                 <Checkbox
                   id={`rarity-${rarity}`}
-                  checked={filters.rarity.includes(rarity)}
+                  checked={localFilters.rarity.includes(rarity)}
                   onCheckedChange={(checked) => handleRarityChange(rarity, checked as boolean)}
                 />
                 <Label htmlFor={`rarity-${rarity}`} className="text-sm">
@@ -110,41 +113,45 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               </div>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/* Color */}
-        <div>
-          <Label className="text-sm font-medium mb-3 block">Color</Label>
+      {/* Color */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Color</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-2">
             {colors.map((color) => (
               <div key={color} className="flex items-center space-x-2">
                 <Checkbox
                   id={`color-${color}`}
-                  checked={filters.color.includes(color)}
+                  checked={localFilters.color.includes(color)}
                   onCheckedChange={(checked) => handleColorChange(color, checked as boolean)}
                 />
-                <div className={`w-4 h-4 rounded-full ${getColorClass(color)}`} />
-                <Label htmlFor={`color-${color}`} className="text-sm">
+                <Label htmlFor={`color-${color}`} className="text-sm flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${getColorClass(color)}`} />
                   {color}
                 </Label>
               </div>
             ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/* Type */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Type</Label>
-          <Select value={filters.type} onValueChange={(value) => onFiltersChange({ ...filters, type: value })}>
+      {/* Type */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Type</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={localFilters.type} onValueChange={(value) => updateFilter("type", value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-types">All Types</SelectItem>
+              <SelectItem value="all-types">All types</SelectItem>
               {types.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
@@ -152,72 +159,43 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Series */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Series</Label>
-          <Select value={filters.series} onValueChange={(value) => onFiltersChange({ ...filters, series: value })}>
+      {/* Series */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Series</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={localFilters.series} onValueChange={(value) => updateFilter("series", value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select series" />
+              <SelectValue placeholder="All series" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-series">All Series</SelectItem>
+              <SelectItem value="all-series">All series</SelectItem>
               {series.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s.split("[")[0].trim()}
+                  {s}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/* Price Range */}
-        <div>
-          <Label className="text-sm font-medium mb-3 block">
-            Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}
-          </Label>
-          <Slider
-            value={filters.priceRange}
-            onValueChange={(value) => onFiltersChange({ ...filters, priceRange: value as [number, number] })}
-            max={1000}
-            min={0}
-            step={5}
-            className="mt-2"
-          />
-        </div>
-
-        {/* Power Range */}
-        <div>
-          <Label className="text-sm font-medium mb-3 block">
-            Power Range: {filters.powerRange[0]} - {filters.powerRange[1]}
-          </Label>
-          <Slider
-            value={filters.powerRange}
-            onValueChange={(value) => onFiltersChange({ ...filters, powerRange: value as [number, number] })}
-            max={12000}
-            min={0}
-            step={500}
-            className="mt-2"
-          />
-        </div>
-
-        <Separator />
-
-        {/* Attribute */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Attribute</Label>
-          <Select
-            value={filters.attribute}
-            onValueChange={(value) => onFiltersChange({ ...filters, attribute: value })}
-          >
+      {/* Attribute */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Attribute</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={localFilters.attribute} onValueChange={(value) => updateFilter("attribute", value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select attribute" />
+              <SelectValue placeholder="All attributes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-attributes">All Attributes</SelectItem>
+              <SelectItem value="all-attributes">All attributes</SelectItem>
               {attributes.map((attr) => (
                 <SelectItem key={attr} value={attr}>
                   {attr}
@@ -225,26 +203,82 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Sort By */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Sort By</Label>
-          <Select value={filters.sortBy} onValueChange={(value) => onFiltersChange({ ...filters, sortBy: value })}>
+      {/* Price Range */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Price Range</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Slider
+              value={localFilters.priceRange}
+              onValueChange={(value) => updateFilter("priceRange", value as [number, number])}
+              max={1000}
+              min={0}
+              step={5}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>${localFilters.priceRange[0]}</span>
+              <span>${localFilters.priceRange[1]}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Power Range */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Power Range</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Slider
+              value={localFilters.powerRange}
+              onValueChange={(value) => updateFilter("powerRange", value as [number, number])}
+              max={12000}
+              min={0}
+              step={100}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>{localFilters.powerRange[0].toLocaleString()}</span>
+              <span>{localFilters.powerRange[1].toLocaleString()}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sort By */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Sort By</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={localFilters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name-asc">Name A-Z</SelectItem>
-              <SelectItem value="name-desc">Name Z-A</SelectItem>
-              <SelectItem value="price-low">Price Low-High</SelectItem>
-              <SelectItem value="price-high">Price High-Low</SelectItem>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="price-low">Price (Low to High)</SelectItem>
+              <SelectItem value="price-high">Price (High to Low)</SelectItem>
               <SelectItem value="rarity">Rarity</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Clear Filters */}
+      <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+        <X className="w-4 h-4 mr-2" />
+        Clear All Filters
+      </Button>
+    </div>
   )
 }
 

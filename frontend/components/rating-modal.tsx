@@ -35,36 +35,63 @@ export default function RatingModal({
   cardName,
   cardImage,
 }: RatingModalProps) {
-  const [ratings, setRatings] = useState({
-    overall: 0,
-    communication: 0,
-    speed: 0,
-    reliability: 0,
-  })
+  const [overallRating, setOverallRating] = useState(0)
+  const [communication, setCommunication] = useState(0)
+  const [speed, setSpeed] = useState(0)
+  const [reliability, setReliability] = useState(0)
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleStarClick = (category: keyof typeof ratings, rating: number) => {
-    setRatings((prev) => ({ ...prev, [category]: rating }))
-  }
+  const StarRating = ({
+    rating,
+    onRatingChange,
+    label,
+  }: {
+    rating: number
+    onRatingChange: (rating: number) => void
+    label: string
+  }) => (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => onRatingChange(star)}
+            className="transition-colors hover:scale-110"
+          >
+            <Star
+              className={`w-6 h-6 ${
+                star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-300"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 
   const handleSubmit = async () => {
-    if (ratings.overall === 0) {
+    if (overallRating === 0) {
       alert("Please provide an overall rating")
       return
     }
 
     setIsSubmitting(true)
+
     try {
       await submitRating({
         chatId,
         ratedUserId: targetUserId,
-        raterUserId: "current-user",
-        overallRating: ratings.overall,
-        communication: ratings.communication,
-        speed: ratings.speed,
-        reliability: ratings.reliability,
-        comment: comment.trim(),
+        raterUserId: "current-user", // This would come from auth context
+        raterName: "CardMaster123", // This would come from auth context
+        cardName,
+        overallRating,
+        communication: communication || overallRating,
+        speed: speed || overallRating,
+        reliability: reliability || overallRating,
+        comment,
       })
 
       onClose()
@@ -76,33 +103,16 @@ export default function RatingModal({
     }
   }
 
-  const StarRating = ({
-    rating,
-    onRate,
-    label,
-  }: { rating: number; onRate: (rating: number) => void; label: string }) => (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}:</Label>
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button key={star} type="button" onClick={() => onRate(star)} className="focus:outline-none">
-            <Star
-              className={`w-6 h-6 ${
-                star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"
-              } transition-colors`}
-            />
-          </button>
-        ))}
-      </div>
-    </div>
-  )
+  const handleSkip = () => {
+    onClose()
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Rate Your Experience with {targetUserName}</DialogTitle>
-          <DialogDescription>Help other users by sharing your experience with this transaction</DialogDescription>
+          <DialogTitle>Rate Your Experience</DialogTitle>
+          <DialogDescription>Rate your experience with {targetUserName}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -117,51 +127,42 @@ export default function RatingModal({
             />
             <div>
               <p className="font-medium text-sm">{cardName}</p>
-              <p className="text-xs text-gray-600">Transaction with {targetUserName}</p>
+              <p className="text-xs text-gray-500">Transaction with {targetUserName}</p>
             </div>
           </div>
 
-          {/* Ratings */}
-          <div className="space-y-4">
-            <StarRating
-              rating={ratings.overall}
-              onRate={(rating) => handleStarClick("overall", rating)}
-              label="Overall Rating"
-            />
-            <StarRating
-              rating={ratings.communication}
-              onRate={(rating) => handleStarClick("communication", rating)}
-              label="Communication"
-            />
-            <StarRating rating={ratings.speed} onRate={(rating) => handleStarClick("speed", rating)} label="Speed" />
-            <StarRating
-              rating={ratings.reliability}
-              onRate={(rating) => handleStarClick("reliability", rating)}
-              label="Reliability"
-            />
+          {/* Overall Rating */}
+          <StarRating rating={overallRating} onRatingChange={setOverallRating} label="Overall Rating" />
+
+          {/* Category Ratings */}
+          <div className="grid grid-cols-1 gap-4">
+            <StarRating rating={communication} onRatingChange={setCommunication} label="Communication" />
+            <StarRating rating={speed} onRatingChange={setSpeed} label="Speed" />
+            <StarRating rating={reliability} onRatingChange={setReliability} label="Reliability" />
           </div>
 
           {/* Comment */}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="comment" className="text-sm font-medium">
-              Comment (optional)
+              Comment (Optional)
             </Label>
             <Textarea
               id="comment"
-              placeholder="Share additional feedback about your experience..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="mt-1"
-              rows={3}
+              placeholder="Share your experience with other traders..."
+              className="min-h-[80px] resize-none"
+              maxLength={500}
             />
+            <p className="text-xs text-gray-500">{500 - comment.length} characters remaining</p>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={handleSkip} disabled={isSubmitting}>
             Skip Rating
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || overallRating === 0}>
             {isSubmitting ? "Submitting..." : "Submit Rating"}
           </Button>
         </DialogFooter>

@@ -5,10 +5,11 @@ import Header from "@/components/header"
 import SellCardGrid from "@/components/sell-card-grid"
 import BulkImportPanel from "@/components/bulk-import-panel"
 import EditCardModal from "@/components/edit-card-modal"
+import ProtectedRoute from "@/components/auth/protected-route"
 import { mockUserCards } from "@/lib/mock-user-data"
 import type { UserCard } from "@/lib/types"
 
-export default function SellCardsPage() {
+export default function SellPage() {
   const [userCards, setUserCards] = useState<UserCard[]>(mockUserCards)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCard, setSelectedCard] = useState<UserCard | null>(null)
@@ -43,39 +44,41 @@ export default function SellCardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      <main className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sell Your Cards</h1>
-          <p className="text-gray-600">Manage your card listings and add new cards for sale</p>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-slate-50">
+        <Header />
+        <div className="container mx-auto px-4 py-6">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sell Your Cards</h1>
+            <p className="text-gray-600">Manage your card listings and add new cards for sale</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-1">
+              <BulkImportPanel
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onBulkImport={handleBulkImport}
+              />
+            </div>
+            <div className="lg:col-span-3">
+              <SellCardGrid cards={filteredCards} onCardClick={handleCardClick} />
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1">
-            <BulkImportPanel
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onBulkImport={handleBulkImport}
-            />
-          </div>
-          <div className="lg:col-span-3">
-            <SellCardGrid cards={filteredCards} onCardClick={handleCardClick} />
-          </div>
-        </div>
-      </main>
-
-      {selectedCard && (
-        <EditCardModal
-          card={selectedCard}
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false)
-            setSelectedCard(null)
-          }}
-          onSave={handleCardUpdate}
-        />
-      )}
-    </div>
+        {selectedCard && (
+          <EditCardModal
+            card={selectedCard}
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false)
+              setSelectedCard(null)
+            }}
+            onSave={handleCardUpdate}
+          />
+        )}
+      </div>
+    </ProtectedRoute>
   )
 }
