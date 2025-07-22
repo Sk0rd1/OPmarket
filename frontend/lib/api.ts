@@ -2,6 +2,8 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+console.log('API_BASE_URL:', API_BASE_URL);
+
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -16,48 +18,49 @@ export interface CardsApiResponse {
   totalPages: number;
 }
 
+// ОНОВЛЕНІ ІНТЕРФЕЙСИ ДЛЯ PASCALCASE (як повертає ASP.NET)
 export interface ApiCard {
-  productId: string;
-  baseCardId: string;
-  name: string;
-  cardTypeDetail?: string;
-  effect?: string;
-  power?: number;
-  cost?: number;
-  life?: number;
-  counter?: number;
-  attribute?: string;
-  rarity?: string;
-  setCode?: string;
-  artist?: string;
-  imageUrl?: string;
-  language: string;
-  isAlternateArt: boolean;
-  seriesName?: string;
-  colors: ApiCardColor[];
-  listings: ApiListing[];
-  minPrice?: number;
-  listingCount?: number;
+  ProductId: string;          // було: productId
+  BaseCardId: string;         // було: baseCardId
+  Name: string;               // було: name
+  CardTypeDetail?: string;    // було: cardTypeDetail
+  Effect?: string;            // було: effect
+  Power?: number;             // було: power
+  Cost?: number;              // було: cost
+  Life?: number;              // було: life
+  Counter?: number;           // було: counter
+  Attribute?: string;         // було: attribute
+  Rarity?: string;            // було: rarity
+  SetCode?: string;           // було: setCode
+  Artist?: string;            // було: artist
+  ImageUrl?: string;          // було: imageUrl
+  Language: string;           // було: language
+  IsAlternateArt: boolean;    // було: isAlternateArt
+  SeriesName?: string;        // було: seriesName
+  Colors: ApiCardColor[];     // було: colors
+  Listings: ApiListing[];     // було: listings
+  MinPrice?: number;          // було: minPrice
+  ListingCount?: number;      // було: listingCount
 }
 
 export interface ApiCardColor {
-  code: string;
-  name: string;
-  hexColor?: string;
-  isPrimary: boolean;
+  Code: string;               // було: code
+  Name: string;               // було: name
+  HexColor?: string;          // було: hexColor
+  IsPrimary: boolean;         // було: isPrimary
 }
 
 export interface ApiListing {
-  id: string;
-  conditionCode: string;
-  conditionName: string;
-  price: number;
-  quantity: number;
-  description?: string;
-  sellerUsername: string;
-  sellerRating: number;
-  isVerifiedSeller: boolean;
-  createdAt: string;
+  Id: string;                 // було: id
+  ConditionCode: string;      // було: conditionCode
+  ConditionName: string;      // було: conditionName
+  Price: number;              // було: price
+  Quantity: number;           // було: quantity
+  Description?: string;       // було: description
+  SellerUsername: string;     // було: sellerUsername
+  SellerRating: number;       // було: sellerRating
+  IsVerifiedSeller: boolean;  // було: isVerifiedSeller
+  CreatedAt: string;          // було: createdAt
 }
 
 class ApiClient {
@@ -148,29 +151,47 @@ export const apiClient = new ApiClient(API_BASE_URL);
 
 // Функція для конвертації API Card в компонентний Card
 export function convertApiCardToCard(apiCard: ApiCard): import('./types').Card {
-  const primaryColor = apiCard.colors.find(c => c.isPrimary) || apiCard.colors[0];
+  console.log('🔧 Converting API card:', apiCard.Name);
+  console.log('🎨 Colors:', apiCard.Colors);
+  console.log('📋 Listings:', apiCard.Listings);
+  
+  // ПЕРЕВІРКА НА UNDEFINED (тепер з правильними назвами полів)
+  if (!apiCard.Colors) {
+    console.error('❌ Colors is undefined for card:', apiCard.Name);
+    console.log('Full apiCard:', JSON.stringify(apiCard, null, 2));
+    // Створюємо fallback colors
+    apiCard.Colors = [{ Code: "Red", Name: "Red", IsPrimary: true }];
+  }
+  
+  if (!apiCard.Listings) {
+    console.error('❌ Listings is undefined for card:', apiCard.Name);
+    apiCard.Listings = [];
+  }
+  
+  // БЕЗПЕЧНИЙ ПОШУК КОЛЬОРУ (з правильними назвами полів)
+  const primaryColor = apiCard.Colors?.find(c => c.IsPrimary) || apiCard.Colors?.[0] || { Name: "Red" };
   
   return {
-    id: apiCard.baseCardId,
-    name: apiCard.name,
-    rarity: apiCard.rarity || 'C',
-    type: apiCard.cardTypeDetail || 'CHARACTER',
-    attribute: apiCard.attribute || '',
-    power: apiCard.power || 0,
-    counter: apiCard.counter || 0,
-    color: primaryColor?.name || 'Red',
-    card_type: apiCard.cardTypeDetail || '',
-    effect: apiCard.effect || '',
-    image_url: apiCard.imageUrl || '/placeholder.svg?height=838&width=600',
-    alternate_art: apiCard.isAlternateArt,
-    series_id: apiCard.setCode || '',
-    series_name: apiCard.seriesName || '',
-    market_price: apiCard.minPrice || 0,
-    listings: apiCard.listings.map(listing => ({
-      seller: listing.sellerUsername,
-      condition: listing.conditionName,
-      price: listing.price,
-      quantity: listing.quantity
+    id: apiCard.BaseCardId,
+    name: apiCard.Name,
+    rarity: apiCard.Rarity || 'C',
+    type: apiCard.CardTypeDetail || 'CHARACTER',
+    attribute: apiCard.Attribute || '',
+    power: apiCard.Power || 0,
+    counter: apiCard.Counter || 0,
+    color: primaryColor?.Name || 'Red',
+    card_type: apiCard.CardTypeDetail || '',
+    effect: apiCard.Effect || '',
+    image_url: apiCard.ImageUrl || '/placeholder.svg?height=838&width=600',
+    alternate_art: apiCard.IsAlternateArt,
+    series_id: apiCard.SetCode || '',
+    series_name: apiCard.SeriesName || '',
+    market_price: apiCard.MinPrice || 0,
+    listings: (apiCard.Listings || []).map(listing => ({
+      seller: listing.SellerUsername,
+      condition: listing.ConditionName,
+      price: listing.Price,
+      quantity: listing.Quantity
     }))
   };
 }

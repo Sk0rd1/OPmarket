@@ -34,61 +34,107 @@ export default function HomePage() {
 
   // Додаткова фільтрація на фронтенді (те що API не підтримує)
   const filteredCards = useMemo(() => {
-    let filtered = [...apiCards]
+    // БЕЗПЕЧНА ПЕРЕВІРКА МАСИВУ
+    if (!apiCards || !Array.isArray(apiCards)) {
+      console.warn('⚠️ apiCards is not an array:', apiCards);
+      return [];
+    }
+
+    let filtered = apiCards.filter(card => {
+      // БАЗОВА ПЕРЕВІРКА НА ІСНУВАННЯ ОБ'ЄКТА ТА ОБОВ'ЯЗКОВИХ ПОЛІВ
+      if (!card || !card.name) {
+        console.warn('⚠️ Card without name found:', card);
+        return false;
+      }
+
+      return true;
+    });
 
     // Seller search filter (API не підтримує, робимо на фронтенді)
     if (filters.sellerSearch) {
-      filtered = filtered.filter((card) =>
-        card.listings.some((listing) =>
-          listing.seller.toLowerCase().includes(filters.sellerSearch.toLowerCase())
-        )
-      )
+      filtered = filtered.filter((card) => {
+        if (!card.listings || !Array.isArray(card.listings)) {
+          return false;
+        }
+        return card.listings.some((listing) => {
+          if (!listing || !listing.seller) {
+            return false;
+          }
+          return listing.seller.toLowerCase().includes(filters.sellerSearch.toLowerCase());
+        });
+      });
     }
 
     // Type filter (додаткова фільтрація)
     if (filters.type && filters.type !== "all-types") {
-      filtered = filtered.filter((card) => card.type === filters.type)
+      filtered = filtered.filter((card) => card.type === filters.type);
     }
 
     // Series filter (додаткова фільтрація)
     if (filters.series && filters.series !== "all-series") {
-      filtered = filtered.filter((card) => card.series_name === filters.series)
+      filtered = filtered.filter((card) => card.series_name === filters.series);
     }
 
     // Power range filter (додаткова фільтрація)
-    filtered = filtered.filter((card) =>
-      card.power >= filters.powerRange[0] && card.power <= filters.powerRange[1]
-    )
+    filtered = filtered.filter((card) => {
+      const power = card.power || 0;
+      return power >= filters.powerRange[0] && power <= filters.powerRange[1];
+    });
 
     // Attribute filter (додаткова фільтрація)
     if (filters.attribute && filters.attribute !== "all-attributes") {
-      filtered = filtered.filter((card) => card.attribute === filters.attribute)
+      filtered = filtered.filter((card) => card.attribute === filters.attribute);
     }
 
-    // Sort filtered results
+    // БЕЗПЕЧНЕ СОРТУВАННЯ
     filtered.sort((a, b) => {
+      // ПЕРЕВІРКА НА ІСНУВАННЯ ОСНОВНИХ ПОЛІВ
+      if (!a || !b) {
+        console.warn('⚠️ Undefined card objects in sort:', a, b);
+        return 0;
+      }
+
       switch (filters.sortBy) {
         case "name-asc":
-          return a.name.localeCompare(b.name)
+          if (!a.name || !b.name) {
+            console.warn('⚠️ Cannot sort cards with undefined names:', a, b);
+            return 0;
+          }
+          return a.name.localeCompare(b.name);
+          
         case "name-desc":
-          return b.name.localeCompare(a.name)
+          if (!a.name || !b.name) {
+            console.warn('⚠️ Cannot sort cards with undefined names:', a, b);
+            return 0;
+          }
+          return b.name.localeCompare(a.name);
+          
         case "price-low":
-          return a.market_price - b.market_price
+          const priceA = a.market_price || 0;
+          const priceB = b.market_price || 0;
+          return priceA - priceB;
+          
         case "price-high":
-          return b.market_price - a.market_price
+          const priceHighA = a.market_price || 0;
+          const priceHighB = b.market_price || 0;
+          return priceHighB - priceHighA;
+          
         case "rarity":
-          const rarityOrder = { C: 1, UC: 2, R: 3, SR: 4, SEC: 5, L: 6, P: 7 }
+          const rarityOrder = { C: 1, UC: 2, R: 3, SR: 4, SEC: 5, L: 6, P: 7 };
+          const rarityA = a.rarity || 'C';
+          const rarityB = b.rarity || 'C';
           return (
-            (rarityOrder[b.rarity as keyof typeof rarityOrder] || 0) -
-            (rarityOrder[a.rarity as keyof typeof rarityOrder] || 0)
-          )
+            (rarityOrder[rarityB as keyof typeof rarityOrder] || 0) -
+            (rarityOrder[rarityA as keyof typeof rarityOrder] || 0)
+          );
+          
         default:
-          return 0
+          return 0;
       }
-    })
+    });
 
-    return filtered
-  }, [apiCards, filters])
+    return filtered;
+  }, [apiCards, filters]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -123,7 +169,7 @@ export default function HomePage() {
                 <h3 className="text-red-800 font-semibold mb-2">Connection Error</h3>
                 <p className="text-red-700 mb-3">{error}</p>
                 <p className="text-sm text-red-600">
-                  Make sure your ASP.NET API is running on http://localhost:5000
+                  Make sure your ASP.NET API is running on http://192.168.31.78:5000
                 </p>
               </div>
             )}
