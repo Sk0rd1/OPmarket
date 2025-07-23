@@ -2,8 +2,6 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-console.log('API_BASE_URL:', API_BASE_URL);
-
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -18,49 +16,49 @@ export interface CardsApiResponse {
   totalPages: number;
 }
 
-// ОНОВЛЕНІ ІНТЕРФЕЙСИ ДЛЯ PASCALCASE (як повертає ASP.NET)
+// ІНТЕРФЕЙСИ ДЛЯ PASCALCASE (як повертає ASP.NET)
 export interface ApiCard {
-  ProductId: string;          // було: productId
-  BaseCardId: string;         // було: baseCardId
-  Name: string;               // було: name
-  CardTypeDetail?: string;    // було: cardTypeDetail
-  Effect?: string;            // було: effect
-  Power?: number;             // було: power
-  Cost?: number;              // було: cost
-  Life?: number;              // було: life
-  Counter?: number;           // було: counter
-  Attribute?: string;         // було: attribute
-  Rarity?: string;            // було: rarity
-  SetCode?: string;           // було: setCode
-  Artist?: string;            // було: artist
-  ImageUrl?: string;          // було: imageUrl
-  Language: string;           // було: language
-  IsAlternateArt: boolean;    // було: isAlternateArt
-  SeriesName?: string;        // було: seriesName
-  Colors: ApiCardColor[];     // було: colors
-  Listings: ApiListing[];     // було: listings
-  MinPrice?: number;          // було: minPrice
-  ListingCount?: number;      // було: listingCount
+  ProductId: string;
+  BaseCardId: string;
+  Name: string;
+  CardTypeDetail?: string;
+  Effect?: string;
+  Power?: number;
+  Cost?: number;
+  Life?: number;
+  Counter?: number;
+  Attribute?: string;
+  Rarity?: string;
+  SetCode?: string;
+  Artist?: string;
+  ImageUrl?: string;
+  Language: string;
+  IsAlternateArt: boolean;
+  SeriesName?: string;
+  Colors: ApiCardColor[];
+  Listings: ApiListing[];
+  MinPrice?: number;
+  ListingCount?: number;
 }
 
 export interface ApiCardColor {
-  Code: string;               // було: code
-  Name: string;               // було: name
-  HexColor?: string;          // було: hexColor
-  IsPrimary: boolean;         // було: isPrimary
+  Code: string;
+  Name: string;
+  HexColor?: string;
+  IsPrimary: boolean;
 }
 
 export interface ApiListing {
-  Id: string;                 // було: id
-  ConditionCode: string;      // було: conditionCode
-  ConditionName: string;      // було: conditionName
-  Price: number;              // було: price
-  Quantity: number;           // було: quantity
-  Description?: string;       // було: description
-  SellerUsername: string;     // було: sellerUsername
-  SellerRating: number;       // було: sellerRating
-  IsVerifiedSeller: boolean;  // було: isVerifiedSeller
-  CreatedAt: string;          // було: createdAt
+  Id: string;
+  ConditionCode: string;
+  ConditionName: string;
+  Price: number;
+  Quantity: number;
+  Description?: string;
+  SellerUsername: string;
+  SellerRating: number;
+  IsVerifiedSeller: boolean;
+  CreatedAt: string;
 }
 
 class ApiClient {
@@ -76,7 +74,11 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      console.log('API Request:', url);
+      
+      // Логуємо тільки у development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('API Request:', url);
+      }
 
       const response = await fetch(url, {
         headers: {
@@ -91,7 +93,16 @@ class ApiClient {
       }
 
       const data = await response.json();
-      console.log('API Response:', data);
+      
+      // Логуємо тільки у development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('API Response received:', { 
+          endpoint, 
+          dataCount: Array.isArray(data?.data) ? data.data.length : 'N/A',
+          totalCount: data?.totalCount || 'N/A'
+        });
+      }
+      
       return { data };
     } catch (error) {
       console.error('API Error:', error);
@@ -104,6 +115,7 @@ class ApiClient {
   async getCards(params: {
     page?: number;
     limit?: number;
+    offset?: number; // Додав підтримку offset
     search?: string;
     colors?: string[];
     rarities?: string[];
@@ -112,7 +124,13 @@ class ApiClient {
   } = {}): Promise<ApiResponse<CardsApiResponse>> {
     const searchParams = new URLSearchParams();
     
-    if (params.page) searchParams.append('page', params.page.toString());
+    // Конвертуємо offset в page якщо потрібно
+    let page = params.page;
+    if (params.offset !== undefined && params.limit) {
+      page = Math.floor(params.offset / params.limit) + 1;
+    }
+    
+    if (page) searchParams.append('page', page.toString());
     if (params.limit) searchParams.append('limit', params.limit.toString());
     if (params.search) searchParams.append('search', params.search);
     if (params.colors?.length) {
@@ -151,25 +169,10 @@ export const apiClient = new ApiClient(API_BASE_URL);
 
 // Функція для конвертації API Card в компонентний Card
 export function convertApiCardToCard(apiCard: ApiCard): import('./types').Card {
-  console.log('🔧 Converting API card:', apiCard.Name);
-  console.log('🎨 Colors:', apiCard.Colors);
-  console.log('📋 Listings:', apiCard.Listings);
-  
-  // ПЕРЕВІРКА НА UNDEFINED (тепер з правильними назвами полів)
-  if (!apiCard.Colors) {
-    console.error('❌ Colors is undefined for card:', apiCard.Name);
-    console.log('Full apiCard:', JSON.stringify(apiCard, null, 2));
-    // Створюємо fallback colors
-    apiCard.Colors = [{ Code: "Red", Name: "Red", IsPrimary: true }];
-  }
-  
-  if (!apiCard.Listings) {
-    console.error('❌ Listings is undefined for card:', apiCard.Name);
-    apiCard.Listings = [];
-  }
-  
-  // БЕЗПЕЧНИЙ ПОШУК КОЛЬОРУ (з правильними назвами полів)
-  const primaryColor = apiCard.Colors?.find(c => c.IsPrimary) || apiCard.Colors?.[0] || { Name: "Red" };
+  // Безпечна перевірка і fallback значення
+  const colors = apiCard.Colors || [{ Code: "Red", Name: "Red", IsPrimary: true, HexColor: "#ff0000" }];
+  const listings = apiCard.Listings || [];
+  const primaryColor = colors.find(c => c.IsPrimary) || colors[0] || { Name: "Red" };
   
   return {
     id: apiCard.BaseCardId,
@@ -187,7 +190,7 @@ export function convertApiCardToCard(apiCard: ApiCard): import('./types').Card {
     series_id: apiCard.SetCode || '',
     series_name: apiCard.SeriesName || '',
     market_price: apiCard.MinPrice || 0,
-    listings: (apiCard.Listings || []).map(listing => ({
+    listings: listings.map(listing => ({
       seller: listing.SellerUsername,
       condition: listing.ConditionName,
       price: listing.Price,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,19 +16,91 @@ interface FilterPanelProps {
   onFiltersChange: (filters: FilterState) => void
 }
 
+// Функція debounce для оптимізації пошуку
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
+// Валідація та санітізація інпутів
+const sanitizeInput = (input: string): string => {
+  if (typeof input !== 'string') return ''
+  return input
+    .trim()
+    .replace(/[<>\"'&]/g, '') // Базова XSS захист
+    .substring(0, 100) // Обмеження довжини
+}
+
+const validatePriceRange = (range: number[]): [number, number] => {
+  const [min, max] = range
+  const safeMin = Math.max(0, Math.min(min || 0, 10000))
+  const safeMax = Math.max(safeMin, Math.min(max || 1000, 10000))
+  return [safeMin, safeMax]
+}
+
+const validatePowerRange = (range: number[]): [number, number] => {
+  const [min, max] = range
+  const safeMin = Math.max(0, Math.min(min || 0, 50000))
+  const safeMax = Math.max(safeMin, Math.min(max || 12000, 50000))
+  return [safeMin, safeMax]
+}
+
 export default function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
   const [localFilters, setLocalFilters] = useState(filters)
+  const [searchInput, setSearchInput] = useState(filters.search)
 
-  const updateFilter = (key: keyof FilterState, value: any) => {
-    const newFilters = { ...localFilters, [key]: value }
+  // Debounced search - запит відправляється тільки після паузи в 500мс
+  const debouncedSearch = useDebounce(searchInput, 500)
+
+  // Відправка debouncеd пошуку
+  useEffect(() => {
+    if (debouncedSearch !== localFilters.search) {
+      updateFilter("search", sanitizeInput(debouncedSearch))
+    }
+  }, [debouncedSearch])
+
+  const updateFilter = useCallback((key: keyof FilterState, value: any) => {
+    let sanitizedValue = value
+
+    // Валідація різних типів фільтрів
+    switch (key) {
+      case 'search':
+        sanitizedValue = sanitizeInput(value)
+        break
+      case 'priceRange':
+        sanitizedValue = validatePriceRange(value)
+        break
+      case 'powerRange':
+        sanitizedValue = validatePowerRange(value)
+        break
+      case 'rarity':
+      case 'color':
+        // Валідація масивів
+        if (!Array.isArray(value)) sanitizedValue = []
+        sanitizedValue = value.filter((item: string) => typeof item === 'string' && item.length < 20)
+        break
+    }
+
+    const newFilters = { ...localFilters, [key]: sanitizedValue }
     setLocalFilters(newFilters)
     onFiltersChange(newFilters)
-  }
+  }, [localFilters, onFiltersChange])
 
   const clearFilters = () => {
     const clearedFilters: FilterState = {
       search: "",
-      sellerSearch: "",
+      sellerSearch: "", // Залишаю для сумісності, але не показую
       rarity: [],
       color: [],
       type: "",
@@ -39,33 +111,44 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
       sortBy: "name-asc",
     }
     setLocalFilters(clearedFilters)
+    setSearchInput("")
     onFiltersChange(clearedFilters)
   }
 
-  const rarities = ["C", "UC", "R", "SR", "SEC", "L", "P"]
-  const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Multicolor"]
-  const types = ["CHARACTER", "EVENT", "STAGE", "LEADER"]
-  const attributes = ["Strike", "Slash", "Ranged", "Special"]
-  const series = [
+  // Валідні опції для фільтрів
+  const validRarities = ["C", "UC", "R", "SR", "SEC", "L", "P"]
+  const validColors = ["Red", "Blue", "Green", "Yellow", "Purple", "Black", "Multicolor"]
+  const validTypes = ["CHARACTER", "EVENT", "STAGE", "DON", "LEADER"]
+  const validAttributes = ["Strike", "Slash", "Ranged", "Special"]
+  const validSeries = [
     "BOOSTER PACK ROMANCE DAWN [OP-01]",
     "BOOSTER PACK PARAMOUNT WAR [OP-02]",
     "BOOSTER PACK PILLARS OF STRENGTH [OP-03]",
-    "ONE PIECE CARD THE BEST- [PRB-01]",
+    "BOOSTER PACK KINGDOMS OF INTRIGUE [OP-04]",
+    "EMPERORS IN THE NEW WORLD [OP-09]",
   ]
 
   const handleRarityChange = (rarity: string, checked: boolean) => {
-    const newRarities = checked ? [...localFilters.rarity, rarity] : localFilters.rarity.filter((r) => r !== rarity)
+    if (!validRarities.includes(rarity)) return
+    
+    const newRarities = checked 
+      ? [...localFilters.rarity, rarity] 
+      : localFilters.rarity.filter((r) => r !== rarity)
     updateFilter("rarity", newRarities)
   }
 
   const handleColorChange = (color: string, checked: boolean) => {
-    const newColors = checked ? [...localFilters.color, color] : localFilters.color.filter((c) => c !== color)
+    if (!validColors.includes(color)) return
+    
+    const newColors = checked 
+      ? [...localFilters.color, color] 
+      : localFilters.color.filter((c) => c !== color)
     updateFilter("color", newColors)
   }
 
   return (
     <div className="space-y-4">
-      {/* Search */}
+      {/* Search Cards & Card ID */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Search</CardTitle>
@@ -74,21 +157,17 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Search cards..."
-              value={localFilters.search}
-              onChange={(e) => updateFilter("search", e.target.value)}
+              placeholder="Search by name or card ID..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10"
+              maxLength={100}
             />
-          </div>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search by seller..."
-              value={localFilters.sellerSearch}
-              onChange={(e) => updateFilter("sellerSearch", e.target.value)}
-              className="pl-10"
-            />
+            {searchInput && (
+              <div className="text-xs text-gray-500 mt-1">
+                Searching... (debounced)
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -100,7 +179,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {rarities.map((rarity) => (
+            {validRarities.map((rarity) => (
               <div key={rarity} className="flex items-center space-x-2">
                 <Checkbox
                   id={`rarity-${rarity}`}
@@ -123,7 +202,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {colors.map((color) => (
+            {validColors.map((color) => (
               <div key={color} className="flex items-center space-x-2">
                 <Checkbox
                   id={`color-${color}`}
@@ -151,8 +230,8 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-types">All types</SelectItem>
-              {types.map((type) => (
+              <SelectItem value="">All types</SelectItem>
+              {validTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -173,10 +252,10 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All series" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-series">All series</SelectItem>
-              {series.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
+              <SelectItem value="">All series</SelectItem>
+              {validSeries.map((series) => (
+                <SelectItem key={series} value={series}>
+                  {series}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -195,8 +274,8 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All attributes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-attributes">All attributes</SelectItem>
-              {attributes.map((attr) => (
+              <SelectItem value="">All attributes</SelectItem>
+              {validAttributes.map((attr) => (
                 <SelectItem key={attr} value={attr}>
                   {attr}
                 </SelectItem>
@@ -274,7 +353,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
       </Card>
 
       {/* Clear Filters */}
-      <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+      <Button variant="outline" onClick={clearFilters} className="w-full">
         <X className="w-4 h-4 mr-2" />
         Clear All Filters
       </Button>

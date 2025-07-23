@@ -14,14 +14,134 @@ interface CardGridProps {
   cards: CardType[]
 }
 
+// Skeleton Loader компонент
+const CardSkeleton = () => (
+  <Card className="animate-pulse">
+    <CardContent className="p-3">
+      <div className="relative mb-3">
+        <div className="w-full h-[279px] bg-gray-200 rounded-md"></div>
+        <div className="absolute top-2 right-2 w-8 h-5 bg-gray-300 rounded"></div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-5 bg-gray-200 rounded w-16 mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded w-20"></div>
+          </div>
+          <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)
+
+// Компонент окремої картки
+const CardItem = ({ card, index, hoveredCard, setHoveredCard }: {
+  card: CardType,
+  index: number,
+  hoveredCard: string | null,
+  setHoveredCard: (id: string | null) => void
+}) => {
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+
+  // Priority loading для перших 10 карт
+  const priority = index < 10
+
+  return (
+    <Card
+      key={card.id}
+      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+      onMouseEnter={() => setHoveredCard(card.id)}
+      onMouseLeave={() => setHoveredCard(null)}
+    >
+      <Link href={`/card/${card.id}`}>
+        <CardContent className="p-3">
+          <div className="relative mb-3">
+            {/* Skeleton під час завантаження */}
+            {!imageLoaded && !imageError && (
+              <div className="absolute inset-0 bg-gray-200 rounded-md animate-pulse flex items-center justify-center">
+                <div className="text-gray-400 text-xs">Loading...</div>
+              </div>
+            )}
+
+            {/* Основне зображення */}
+            <Image
+              src={card.image_url || "/placeholder.svg?height=279&width=200"}
+              alt={card.name}
+              width={200}
+              height={279}
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
+              className={`w-full h-auto rounded-md transition-all duration-300 group-hover:scale-105 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                setImageError(true)
+                setImageLoaded(true)
+              }}
+              // Простий blur placeholder без base64
+              placeholder="blur"
+              blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3OSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIHN0b3AtY29sb3I9IiNmM2Y0ZjYiIG9mZnNldD0iMCUiPjwvc3RvcD48c3RvcCBzdG9wLWNvbG9yPSIjZTVlN2ViIiBvZmZzZXQ9IjEwMCUiPjwvc3RvcD48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3OSIgZmlsbD0idXJsKCNnKSI+PC9yZWN0Pjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPkxvYWRpbmcuLi48L3RleHQ+PC9zdmc+"
+            />
+
+            {/* Fallback для помилок завантаження */}
+            {imageError && (
+              <div className="w-full h-[279px] bg-gray-100 rounded-md flex items-center justify-center">
+                <div className="text-center text-gray-400">
+                  <div className="text-sm">Image</div>
+                  <div className="text-sm">Not Available</div>
+                </div>
+              </div>
+            )}
+
+            {/* Rarity Badge */}
+            <Badge className={`absolute top-2 right-2 ${getRarityColor(card.rarity)}`}>
+              {card.rarity}
+            </Badge>
+
+            {/* Hover Overlay */}
+            {hoveredCard === card.id && imageLoaded && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-md flex items-center justify-center transition-opacity duration-200">
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" className="opacity-90">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium text-sm leading-tight line-clamp-2 group-hover:text-blue-900 transition-colors">
+              {card.name}
+            </h3>
+
+            <p className="text-xs text-gray-500">{card.id}</p>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-blue-900">
+                  ${card.market_price.toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-600">
+                  ({card.listings.reduce((sum, listing) => sum + listing.quantity, 0)} available)
+                </div>
+              </div>
+              <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
+            </div>
+          </div>
+        </CardContent>
+      </Link>
+    </Card>
+  )
+}
+
 export default function CardGrid({ cards }: CardGridProps) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const cardsPerPage = 30
-
-  const totalPages = Math.ceil(cards.length / cardsPerPage)
-  const startIndex = (currentPage - 1) * cardsPerPage
-  const displayedCards = cards.slice(startIndex, startIndex + cardsPerPage)
 
   if (cards.length === 0) {
     return (
@@ -37,109 +157,18 @@ export default function CardGrid({ cards }: CardGridProps) {
 
   return (
     <div>
-      {/* Results Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Cards ({cards.length.toLocaleString()})</h2>
-        <p className="text-gray-600">
-          Showing {startIndex + 1}-{Math.min(startIndex + cardsPerPage, cards.length)} of {cards.length}
-        </p>
-      </div>
-
       {/* Card Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
-        {displayedCards.map((card) => (
-          <Card
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {cards.map((card, index) => (
+          <CardItem
             key={card.id}
-            className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
-            onMouseEnter={() => setHoveredCard(card.id)}
-            onMouseLeave={() => setHoveredCard(null)}
-          >
-            <Link href={`/card/${card.id}`}>
-              <CardContent className="p-3">
-                <div className="relative mb-3">
-                  <Image
-                    src={card.image_url || "/placeholder.svg?height=279&width=200"}
-                    alt={card.name}
-                    width={200}
-                    height={279}
-                    className="w-full h-auto rounded-md transition-transform duration-200 group-hover:scale-105"
-                  />
-
-                  {/* Rarity Badge */}
-                  <Badge className={`absolute top-2 right-2 ${getRarityColor(card.rarity)}`}>{card.rarity}</Badge>
-
-                  {/* Hover Overlay */}
-                  {hoveredCard === card.id && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-md flex items-center justify-center transition-opacity duration-200">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" className="opacity-90">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium text-sm leading-tight line-clamp-2 group-hover:text-blue-900 transition-colors">
-                    {card.name}
-                  </h3>
-
-                  <p className="text-xs text-gray-500">{card.id}</p>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-lg font-bold text-blue-900">${card.market_price.toFixed(2)}</div>
-                      <div className="text-xs text-gray-600">
-                        ({card.listings.reduce((sum, listing) => sum + listing.quantity, 0)} available)
-                      </div>
-                    </div>
-                    <div className={`w-3 h-3 rounded-full ${getColorClass(card.color)}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Link>
-          </Card>
+            card={card}
+            index={index}
+            hoveredCard={hoveredCard}
+            setHoveredCard={setHoveredCard}
+          />
         ))}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
-              return (
-                <Button
-                  key={pageNum}
-                  variant={currentPage === pageNum ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(pageNum)}
-                  className="w-10"
-                >
-                  {pageNum}
-                </Button>
-              )
-            })}
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
