@@ -241,7 +241,8 @@ namespace OPMarketplace.Controllers
                     {
                         ProductId = card.ProductId,
                         BaseCardId = card.BaseCardId,
-                        Name = card.Name,
+                        ShortCode = card.ShortCode,
+			Name = card.Name,
                         CardTypeDetail = card.CardTypeDetail,
                         Effect = card.Effect,
                         Power = card.Power,
@@ -324,7 +325,8 @@ namespace OPMarketplace.Controllers
                 {
                     ProductId = card.ProductId,
                     BaseCardId = card.BaseCardId,
-                    Name = card.Name,
+                    ShortCode = card.ShortCode,
+		    Name = card.Name,
                     CardTypeDetail = card.CardTypeDetail,
                     Effect = card.Effect,
                     Power = card.Power,
@@ -370,6 +372,134 @@ namespace OPMarketplace.Controllers
             }
         }
 
+	
+	[HttpGet("buy/{shortCode}")]
+public async Task<ActionResult<CardDto>> GetCardByShortCode(string shortCode)
+{
+    try
+    {
+        // Валідація shortCode
+        if (string.IsNullOrWhiteSpace(shortCode) || shortCode.Length > 20)
+        {
+            return BadRequest("Invalid short code format");
+        }
+
+        // 🔧 Нормалізуємо до нижнього регістру для пошуку
+        shortCode = shortCode.Trim().ToLower();
+        
+        _logger.LogInformation("Searching for card with ShortCode: '{ShortCode}'", shortCode);
+
+        var card = await _context.Cards
+            .Include(c => c.CardColors)
+                .ThenInclude(cc => cc.CardColor)
+            .Include(c => c.Listings.Where(l => l.IsActive))
+                .ThenInclude(l => l.Seller)
+            .Include(c => c.Listings.Where(l => l.IsActive))
+                .ThenInclude(l => l.CardCondition)
+            .FirstOrDefaultAsync(c => c.ShortCode.ToLower() == shortCode.ToLower());
+
+        if (card == null)
+        {
+            _logger.LogWarning("Card not found with ShortCode: {ShortCode}", shortCode);
+            return NotFound(new { message = $"Card with code '{shortCode}' not found" });
+        }
+
+        var cardDto = new CardDto
+        {
+            ProductId = card.ProductId,
+            BaseCardId = card.BaseCardId,
+            ShortCode = card.ShortCode,  // 🆕 Додаємо ShortCode в response
+            Name = card.Name,
+            CardTypeDetail = card.CardTypeDetail,
+            Effect = card.Effect,
+            Power = card.Power,
+            Cost = card.Cost,
+            Life = card.Life,
+            Counter = card.Counter,
+            Attribute = card.Attribute,
+            Rarity = card.Rarity,
+            SetCode = card.SetCode,
+            Artist = card.Artist,
+            ImageUrl = card.ImageUrl,
+            Language = card.Language,
+            IsAlternateArt = card.IsAlternateArt,
+            SeriesName = card.SeriesName,
+            Colors = card.CardColors.Select(cc => new CardColorDto 
+            {
+                Code = cc.ColorCode,
+                Name = cc.CardColor.Name,
+                HexColor = cc.CardColor.HexColor,
+                IsPrimary = cc.IsPrimary
+            }).ToList(),
+            Listings = card.Listings.Where(l => l.IsActive).Select(l => new ListingDto
+            {
+                Id = l.Id,
+                ConditionCode = l.ConditionCode,
+                ConditionName = l.CardCondition.Name,
+                Price = l.Price,
+                Quantity = l.Quantity,
+                Description = l.Description,
+                SellerUsername = l.Seller.Username,
+                SellerRating = l.Seller.SellerRating,
+                IsVerifiedSeller = l.Seller.IsVerifiedSeller,
+                CreatedAt = l.CreatedAt
+            }).OrderBy(l => l.Price).ToList()
+        };
+
+        // Додаємо MinPrice та ListingCount
+        cardDto.MinPrice = cardDto.Listings.Any() ? cardDto.Listings.Min(l => l.Price) : null;
+        cardDto.ListingCount = cardDto.Listings.Count;
+
+        return Ok(cardDto);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error fetching card by ShortCode: {ShortCode}", shortCode);
+        return StatusCode(500, new { Error = "Internal server error" });
+    }
+}
+
+	// 🔧 Додайте цей метод в CardsController (або в окремий сервіс)
+private async Task<string> GenerateShortCodeAsync(string baseCardId)
+{
+    // Нормалізуємо baseCardId
+    baseCardId = baseCardId.ToUpper().Trim();
+    
+    // Отримуємо всі існуючі ShortCode для цього baseCardId
+    var existingShortCodes = await _context.Cards
+        .Where(c => c.BaseCardId == baseCardId)
+        .Select(c => c.ShortCode)
+        .ToListAsync();
+    
+    // Якщо немає жодної картки з таким baseCardId
+    if (!existingShortCodes.Any())
+    {
+        return baseCardId; // Основна версія
+    }
+    
+    // Якщо baseCardId вільний (немає основної версії)
+    if (!existingShortCodes.Contains(baseCardId))
+    {
+        return baseCardId; // Основна версія
+    }
+    
+    // Генеруємо альтернативні версії: baseCardId-a1, baseCardId-a2, тощо
+    int altNumber = 1;
+    string shortCode;
+    
+    do
+    {
+        shortCode = $"{baseCardId}-a{altNumber}";
+        altNumber++;
+    }
+    while (existingShortCodes.Contains(shortCode));
+    
+    return shortCode;
+}
+
+// 🔧 При створенні нової картки використовуйте:
+// card.ShortCode = await GenerateShortCodeAsync(card.BaseCardId);
+
         // GET: api/cards/featured
         [HttpGet("featured")]
         [EnableRateLimiting("FeaturedPolicy")]
@@ -400,7 +530,8 @@ namespace OPMarketplace.Controllers
                     {
                         ProductId = card.ProductId,
                         BaseCardId = card.BaseCardId,
-                        Name = card.Name,
+                        ShortCode = card.ShortCode,
+			Name = card.Name,
                         Rarity = card.Rarity,
                         ImageUrl = card.ImageUrl,
                         IsAlternateArt = card.IsAlternateArt,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -9,31 +9,103 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, ShoppingCart, User } from "lucide-react"
 import Header from "@/components/header"
-import { mockCards } from "@/lib/mock-data"
 import { getRarityColor } from "@/lib/utils"
 import { createChat } from "@/lib/chat-service"
+
+// 🆕 Типи для API відповіді
+interface ApiCard {
+  ProductId: string
+  BaseCardId: string  
+  ShortCode: string
+  Name: string
+  CardTypeDetail: string
+  Effect: string
+  Power: number
+  Counter: number
+  Attribute: string
+  Rarity: string
+  SetCode: string
+  ImageUrl: string
+  Language: string
+  IsAlternateArt: boolean
+  SeriesName: string
+  Colors: Array<{
+    Code: string
+    Name: string
+    HexColor: string
+    IsPrimary: boolean
+  }>
+  Listings: Array<{
+    Id: string
+    ConditionCode: string
+    ConditionName: string
+    Price: number
+    Quantity: number
+    Description: string
+    SellerUsername: string
+    SellerRating: number
+    IsVerifiedSeller: boolean
+    CreatedAt: string
+  }>
+  MinPrice: number
+  ListingCount: number
+}
 
 export default function CardDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const [listingsPage, setListingsPage] = useState(1)
+  const [card, setCard] = useState<ApiCard | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const listingsPerPage = 20
 
-  const card = mockCards.find((c) => c.id === params.id)
-  const totalListingsPages = Math.ceil((card?.listings.length || 0) / listingsPerPage)
+  // 🆕 Завантаження картки з API
+  useEffect(() => {
+    const fetchCard = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`http://192.168.31.78:5000/api/cards/buy/${params.id}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("Card not found")
+          } else {
+            setError("Failed to load card")
+          }
+          return
+        }
+        
+        const cardData = await response.json()
+        setCard(cardData)
+      } catch (err) {
+        console.error("Error fetching card:", err)
+        setError("Failed to load card")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchCard()
+    }
+  }, [params.id])
+
+  const totalListingsPages = Math.ceil((card?.Listings.length || 0) / listingsPerPage)
   const startListingIndex = (listingsPage - 1) * listingsPerPage
-  const displayedListings = card?.listings.slice(startListingIndex, startListingIndex + listingsPerPage) || []
+  const displayedListings = card?.Listings.slice(startListingIndex, startListingIndex + listingsPerPage) || []
 
   const handleBuyNow = async (listing: any) => {
     try {
       const chatId = await createChat({
-        cardId: card!.id,
-        cardName: card!.name,
-        cardImage: card!.image_url,
-        sellerId: listing.seller,
+        cardId: card!.ProductId,
+        cardName: card!.Name,
+        cardImage: card!.ImageUrl,
+        sellerId: listing.SellerUsername,
         buyerId: "current-user", // This would come from auth context
-        price: listing.price,
-        condition: listing.condition,
+        price: listing.Price,
+        condition: listing.ConditionName,
       })
 
       // Redirect to chat
@@ -44,12 +116,28 @@ export default function CardDetailsPage() {
     }
   }
 
-  if (!card) {
+  // 🔄 Loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-50">
         <Header />
         <div className="container mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Card not found</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading card details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ⚠️ Error state
+  if (error || !card) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            {error || "Card not found"}
+          </h1>
           <Button onClick={() => router.back()} className="mt-4">
             Go Back
           </Button>
@@ -57,6 +145,9 @@ export default function CardDetailsPage() {
       </div>
     )
   }
+
+  // Отримуємо основний колір
+  const primaryColor = card.Colors.find(color => color.IsPrimary)?.Code || card.Colors[0]?.Code || "Gray"
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -80,21 +171,28 @@ export default function CardDetailsPage() {
           <div className="flex justify-center">
             <div className="relative">
               <Image
-                src={card.image_url || "/placeholder.svg?height=838&width=600"}
-                alt={card.name}
+                src={card.ImageUrl || "/placeholder.svg?height=838&width=600"}
+                alt={card.Name}
                 width={400}
                 height={558}
                 className="rounded-lg shadow-lg"
               />
-              {card.alternate_art && <Badge className="absolute top-2 right-2 bg-yellow-500">Alt Art</Badge>}
+              {card.IsAlternateArt && (
+                <Badge className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  Alt Art
+                </Badge>
+              )}
             </div>
           </div>
 
           {/* Card Details */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{card.name}</h1>
-              <p className="text-lg text-gray-600">{card.id}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{card.Name}</h1>
+              <p className="text-lg text-gray-600">{card.BaseCardId}</p>
+              {card.ShortCode !== card.BaseCardId && (
+                <p className="text-sm text-gray-500">Code: {card.ShortCode}</p>
+              )}
             </div>
 
             {/* Card Stats */}
@@ -106,51 +204,52 @@ export default function CardDetailsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Rarity</p>
-                    <Badge className={getRarityColor(card.rarity)}>{card.rarity}</Badge>
+                    <Badge className={getRarityColor(card.Rarity)}>{card.Rarity}</Badge>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Type</p>
-                    <p className="font-medium">{card.type}</p>
+                    <p className="font-medium">{card.CardTypeDetail}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Color</p>
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full ${getColorClass(card.color)}`} />
-                      <span className="font-medium">{card.color}</span>
+                      <div className={`w-4 h-4 rounded-full ${getColorClass(primaryColor)}`} />
+                      <span className="font-medium">{primaryColor}</span>
                     </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Attribute</p>
-                    <p className="font-medium">{card.attribute}</p>
+                    <p className="font-medium">{card.Attribute}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Power</p>
-                    <p className="font-medium">{card.power.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Counter</p>
-                    <p className="font-medium">{card.counter.toLocaleString()}</p>
-                  </div>
+                  {card.Power && (
+                    <div>
+                      <p className="text-sm text-gray-600">Power</p>
+                      <p className="font-medium">{card.Power.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {card.Counter && (
+                    <div>
+                      <p className="text-sm text-gray-600">Counter</p>
+                      <p className="font-medium">{card.Counter.toLocaleString()}</p>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
 
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Card Type</p>
-                  <p className="font-medium">{card.card_type}</p>
-                </div>
-
-                <div>
                   <p className="text-sm text-gray-600 mb-2">Series</p>
-                  <p className="font-medium">{card.series_name}</p>
+                  <p className="font-medium">{card.SeriesName}</p>
                 </div>
 
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Effect</p>
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <p className="text-sm leading-relaxed">{card.effect}</p>
+                {card.Effect && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Effect</p>
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                      <p className="text-sm leading-relaxed">{card.Effect}</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -160,8 +259,10 @@ export default function CardDetailsPage() {
                 <CardTitle>Market Price</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-900 mb-2">${card.market_price.toFixed(2)}</div>
-                <p className="text-sm text-gray-600">Current market average</p>
+                <div className="text-3xl font-bold text-blue-900 mb-2">
+                  ₴{card.MinPrice.toFixed(2)} {/* 🔧 Замінено $ на ₴ */}
+                </div>
+                <p className="text-sm text-gray-600">Lowest available price</p>
               </CardContent>
             </Card>
           </div>
@@ -170,12 +271,12 @@ export default function CardDetailsPage() {
         {/* Available Listings */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Available Listings ({card.listings.length})</CardTitle>
+            <CardTitle>Available Listings ({card.Listings.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {displayedListings.map((listing, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+              {displayedListings.map((listing) => (
+                <div key={listing.Id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                   <div className="flex-1">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-3">
@@ -183,13 +284,22 @@ export default function CardDetailsPage() {
                           <User className="w-4 h-4 text-gray-600" />
                         </div>
                         <div>
-                          <p className="font-medium">{listing.seller}</p>
-                          <p className="text-sm text-gray-600">Condition: {listing.condition}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{listing.SellerUsername}</p>
+                            {listing.IsVerifiedSeller && (
+                              <Badge variant="secondary" className="text-xs">Verified</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Condition: {listing.ConditionName} • Rating: {listing.SellerRating.toFixed(1)}⭐
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-blue-900">${listing.price.toFixed(2)}</p>
-                        <p className="text-sm text-gray-600">Qty: {listing.quantity}</p>
+                        <p className="text-lg font-bold text-blue-900">
+                          ₴{listing.Price.toFixed(2)} {/* 🔧 Замінено $ на ₴ */}
+                        </p>
+                        <p className="text-sm text-gray-600">Qty: {listing.Quantity}</p>
                       </div>
                     </div>
                   </div>
@@ -255,6 +365,7 @@ function getColorClass(color: string) {
     Yellow: "bg-yellow-500",
     Purple: "bg-purple-500",
     Black: "bg-gray-800",
+    White: "bg-gray-100",
     Multicolor: "bg-gradient-to-r from-red-500 via-blue-500 to-green-500",
   }
   return colorMap[color] || "bg-gray-400"

@@ -70,7 +70,7 @@ const CardItem = ({ card, index, hoveredCard, setHoveredCard }: {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link href={`/card/${card.ProductId || card.id}`}>
+      <Link href={`/card/${card.ShortCode || card.BaseCardId || card.id}`}>
         <CardContent className="p-3">
           <div className="relative mb-3">
             {/* Skeleton під час завантаження */}

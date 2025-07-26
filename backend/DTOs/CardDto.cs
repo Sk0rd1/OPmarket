@@ -1,31 +1,35 @@
 namespace OPMarketplace.DTOs
 {
-    public class CardDto
-    {
-        public Guid ProductId { get; set; }
-        public string BaseCardId { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? CardTypeDetail { get; set; }
-        public string? Effect { get; set; }
-        public int? Power { get; set; }
-        public int? Cost { get; set; }
-        public int? Life { get; set; }
-        public int? Counter { get; set; }
-        public string? Attribute { get; set; }
-        public string? Rarity { get; set; }
-        public string? SetCode { get; set; }
-        public string? Artist { get; set; }
-        public string? ImageUrl { get; set; }
-        public string Language { get; set; } = "EN";
-        public bool IsAlternateArt { get; set; }
-        public string? SeriesName { get; set; }
-        public List<CardColorDto> Colors { get; set; } = new();
-        public List<ListingDto> Listings { get; set; } = new();
-        public decimal? MinPrice { get; set; }
-        public int ListingCount { get; set; }
-    }
+public class CardDto
+{
+    public Guid ProductId { get; set; }
+    public string BaseCardId { get; set; } = string.Empty;
+    
+    // 🆕 Додане поле ShortCode
+    public string ShortCode { get; set; } = string.Empty;
+    
+    public string Name { get; set; } = string.Empty;
+    public string? CardTypeDetail { get; set; }
+    public string? Effect { get; set; }
+    public int? Power { get; set; }
+    public int? Cost { get; set; }
+    public int? Life { get; set; }
+    public int? Counter { get; set; }
+    public string? Attribute { get; set; }
+    public string? Rarity { get; set; }
+    public string? SetCode { get; set; }
+    public string? Artist { get; set; }
+    public string? ImageUrl { get; set; }
+    public string Language { get; set; } = "EN";
+    public bool IsAlternateArt { get; set; }
+    public string? SeriesName { get; set; }
+    public List<CardColorDto> Colors { get; set; } = new();
+    public List<ListingDto> Listings { get; set; } = new();
+    public decimal? MinPrice { get; set; }
+    public int ListingCount { get; set; }
+}
 
-    public class CardColorDto
+ public class CardColorDto
     {
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

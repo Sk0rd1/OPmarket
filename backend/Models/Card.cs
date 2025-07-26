@@ -14,6 +14,11 @@ namespace OPMarketplace.Models
         [StringLength(20)]
         public string BaseCardId { get; set; } = string.Empty;
 
+        // 🆕 Додане поле ShortCode
+        [Column("shortcode")]
+        [StringLength(20)]
+        public string ShortCode { get; set; } = string.Empty;
+
         [Column("name")]
         [StringLength(200)]
         public string Name { get; set; } = string.Empty;
