@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication.JwtBearer; // 🆕 JWT
+using Microsoft.IdentityModel.Tokens; // 🆕 JWT
+using System.Text; // 🆕 JWT
 using OPMarketplace.Data;
+using OPMarketplace.Services; // 🆕 UserService
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
@@ -28,6 +32,26 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// 🆕 JWT Authentication configuration
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))
+        };
+    });
+
+// 🆕 Register UserService for authentication
+builder.Services.AddScoped<IUserService, UserService>();
+
 // Entity Framework + PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -44,14 +68,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
-// CORS налаштування
+// 🔄 CORS налаштування - додав AllowCredentials для JWT
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() 
+                            ?? new[] { "http://localhost:3000", "http://localhost:3001" };
+        
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // 🆕 Для JWT tokens
     });
 });
 
@@ -83,6 +111,15 @@ builder.Services.AddRateLimiter(options =>
         config.Window = TimeSpan.FromMinutes(1);
         config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         config.QueueLimit = 3;
+    });
+
+    // 🆕 Auth endpoints ліміт
+    options.AddFixedWindowLimiter("AuthPolicy", config =>
+    {
+        config.PermitLimit = 20; // 20 спроб аутентифікації за хвилину
+        config.Window = TimeSpan.FromMinutes(1);
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 2;
     });
 
     // Глобальні налаштування по IP
@@ -170,7 +207,11 @@ app.Use(async (context, next) =>
 app.UseResponseCompression();
 app.UseCors("AllowFrontend");
 app.UseRateLimiter();
+
+// 🆕 Authentication middleware - ВАЖЛИВИЙ ПОРЯДОК!
+app.UseAuthentication(); // Має бути перед UseAuthorization
 app.UseAuthorization();
+
 app.MapControllers();
 app.MapHealthChecks("/health");
 
@@ -204,6 +245,13 @@ app.MapGet("/api/health", async (ApplicationDbContext context) =>
                 Environment = app.Environment.EnvironmentName,
                 Version = "1.0.0",
                 Uptime = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")
+            },
+            // 🆕 Auth status
+            Authentication = new
+            {
+                JwtEnabled = true,
+                Issuer = builder.Configuration["JwtSettings:Issuer"],
+                Audience = builder.Configuration["JwtSettings:Audience"]
             },
             Timestamp = DateTime.UtcNow
         });
@@ -357,6 +405,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     logger.LogInformation("📊 Swagger UI: {SwaggerUrl}", "http://localhost:5000/swagger");
     logger.LogInformation("🏥 Health Check: {HealthUrl}", "http://localhost:5000/health");
     logger.LogInformation("🌐 API Base URL: {ApiUrl}", "http://localhost:5000/api");
+    logger.LogInformation("🔐 Auth endpoints: {AuthUrls}", "/api/auth/login, /api/auth/register, /api/auth/validate"); // 🆕
 });
 
 // Graceful shutdown

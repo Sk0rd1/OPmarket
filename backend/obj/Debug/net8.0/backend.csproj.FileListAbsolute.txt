@@ -134,3 +134,13 @@
 /home/skordi/OPmarket/backend/obj/Debug/net8.0/backend.pdb
 /home/skordi/OPmarket/backend/obj/Debug/net8.0/backend.genruntimeconfig.cache
 /home/skordi/OPmarket/backend/obj/Debug/net8.0/ref/backend.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/BCrypt.Net-Next.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Dapper.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.Abstractions.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.Logging.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
+/home/skordi/OPmarket/backend/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
