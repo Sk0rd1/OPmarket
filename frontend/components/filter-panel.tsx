@@ -103,11 +103,11 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
       sellerSearch: "", // Залишаю для сумісності, але не показую
       rarity: [],
       color: [],
-      type: "",
-      series: "",
+      type: "all-types",        // ВИПРАВЛЕНО: замість ""
+      series: "all-series",     // ВИПРАВЛЕНО: замість ""
       priceRange: [0, 1000],
       powerRange: [0, 12000],
-      attribute: "",
+      attribute: "all-attributes", // ВИПРАВЛЕНО: замість ""
       sortBy: "name-asc",
     }
     setLocalFilters(clearedFilters)
@@ -230,7 +230,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All types</SelectItem>
+              <SelectItem value="all-types">All types</SelectItem>
               {validTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
@@ -252,7 +252,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All series" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All series</SelectItem>
+              <SelectItem value="all-series">All series</SelectItem>
               {validSeries.map((series) => (
                 <SelectItem key={series} value={series}>
                   {series}
@@ -274,7 +274,7 @@ export default function FilterPanel({ filters, onFiltersChange }: FilterPanelPro
               <SelectValue placeholder="All attributes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All attributes</SelectItem>
+              <SelectItem value="all-attributes">All attributes</SelectItem>
               {validAttributes.map((attr) => (
                 <SelectItem key={attr} value={attr}>
                   {attr}

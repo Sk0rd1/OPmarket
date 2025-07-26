@@ -14,11 +14,11 @@ export default function HomePage() {
     sellerSearch: "",
     rarity: [],
     color: [],
-    type: "",
-    series: "",
+    type: "all-types",        // Виправлено: замість ""
+    series: "all-series",     // Виправлено: замість ""
     priceRange: [0, 1000],
     powerRange: [0, 12000],
-    attribute: "",
+    attribute: "all-attributes", // Виправлено: замість ""
     sortBy: "name-asc",
   })
 
@@ -65,13 +65,13 @@ export default function HomePage() {
       });
     }
 
-    // Type filter
-    if (filters.type && filters.type !== "all-types") {
+    // Type filter - Виправлено: додана перевірка на нові значення
+    if (filters.type && filters.type !== "all-types" && filters.type !== "") {
       filtered = filtered.filter((card) => card.type === filters.type);
     }
 
-    // Series filter
-    if (filters.series && filters.series !== "all-series") {
+    // Series filter - Виправлено: додана перевірка на нові значення
+    if (filters.series && filters.series !== "all-series" && filters.series !== "") {
       filtered = filtered.filter((card) => card.series_name === filters.series);
     }
 
@@ -81,8 +81,8 @@ export default function HomePage() {
       return power >= filters.powerRange[0] && power <= filters.powerRange[1];
     });
 
-    // Attribute filter
-    if (filters.attribute && filters.attribute !== "all-attributes") {
+    // Attribute filter - Виправлено: додана перевірка на нові значення
+    if (filters.attribute && filters.attribute !== "all-attributes" && filters.attribute !== "") {
       filtered = filtered.filter((card) => card.attribute === filters.attribute);
     }
 
@@ -263,7 +263,7 @@ export default function HomePage() {
             )}
 
             {/* Якщо немає карт */}
-            {!loading && !error && apiCards.length === 0 && (
+            {!loading && !error && apiCards && apiCards.length === 0 && (
               <div className="text-center py-12">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No cards found in database</h3>
                 <p className="text-gray-600">
